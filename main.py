@@ -341,9 +341,12 @@ def create_video(req: CreateVideoRequest):
         "sound": sound
     }
 
-    # Only kling-v1 supports mode (std/pro). V1.5 and V1.6 will throw HTTP 400 if mode is sent.
-    if model_to_use == "kling-v1" and req.mode in ("std", "pro"):
-        payload["mode"] = req.mode
+    # Strictly strip 'mode' key for kling-v1-5 / kling-v1-6 models
+    if model_to_use == "kling-v1":
+        if req.mode in ("std", "pro"):
+            payload["mode"] = req.mode
+    else:
+        payload.pop("mode", None)
     
     # If image (URL or Base64 string) is provided, append it and use image2video route
     is_image = bool(req.image and req.image.strip())
