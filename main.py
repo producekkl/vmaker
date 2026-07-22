@@ -1630,6 +1630,107 @@ def register_profile(req: RegisterProfileRequest):
         print(f"Profile registration exception: {e}")
         return {"ok": True, "message": "User registered."}
 
+
+class GenerationSaveRequest(BaseModel):
+    user_id: str
+    prompt: str
+    image_url: str  # Base64 data or HTTP URL
+    model_name: str
+    type: str = "image"
+
+@app.post("/api/generations")
+def save_generation(req: GenerationSaveRequest):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    bucket = os.getenv("SUPABASE_BUCKET", "vmaker_storage")
+    
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing.")
+
+    public_url = req.image_url
+
+    # 1. If image_url is Base64 data, upload to Supabase Storage ('vmaker_storage')
+    if req.image_url.startswith("data:"):
+        try:
+            header, b64_str = req.image_url.split(";base64,")
+            mime_type = header.replace("data:", "") if "data:" in header else "image/jpeg"
+            ext = "png" if "png" in mime_type else "webp" if "webp" in mime_type else "jpg"
+            file_bytes = base64.b64decode(b64_str)
+
+            filename = f"{req.user_id}/{uuid.uuid4().hex[:12]}.{ext}"
+            upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{filename}"
+            headers_storage = {
+                "Authorization": f"Bearer {supabase_key}",
+                "apikey": supabase_key,
+                "Content-Type": mime_type,
+                "x-upsert": "true"
+            }
+            upload_res = requests.post(upload_url, data=file_bytes, headers=headers_storage, timeout=30)
+            if upload_res.status_code in (200, 201):
+                public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{filename}"
+                print(f"[Supabase Storage] ✅ Uploaded to {public_url}")
+            else:
+                print(f"[Supabase Storage] Upload status {upload_res.status_code}: {upload_res.text[:200]}")
+        except Exception as e:
+            print(f"[Supabase Storage] Upload Exception: {e}")
+
+    # 2. INSERT generation record into 'generations' table
+    db_url = f"{supabase_url}/rest/v1/generations"
+    headers_db = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
+
+    db_payload = {
+        "user_id": req.user_id,
+        "prompt": req.prompt,
+        "image_url": public_url,
+        "model_name": req.model_name,
+        "type": req.type
+    }
+
+    try:
+        db_res = requests.post(db_url, json=db_payload, headers=headers_db, timeout=20)
+        if db_res.status_code in (200, 201):
+            inserted_data = db_res.json()
+            return {"ok": True, "data": inserted_data[0] if isinstance(inserted_data, list) and inserted_data else db_payload}
+        else:
+            print(f"[Supabase DB] Generations insert note {db_res.status_code}: {db_res.text[:200]}")
+            return {"ok": True, "data": db_payload}
+    except Exception as e:
+        print(f"[Supabase DB] Generations Exception: {e}")
+        return {"ok": True, "data": db_payload}
+
+
+@app.get("/api/generations")
+def get_generations(user_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        return {"ok": True, "data": []}
+
+    db_url = f"{supabase_url}/rest/v1/generations"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "user_id": f"eq.{user_id}",
+        "select": "*",
+        "order": "created_at.desc"
+    }
+
+    try:
+        res = requests.get(db_url, headers=headers, params=params, timeout=15)
+        if res.status_code == 200:
+            return {"ok": True, "data": res.json()}
+        else:
+            print(f"[Supabase DB] Generations fetch note {res.status_code}: {res.text[:200]}")
+            return {"ok": True, "data": []}
+    except Exception as e:
+        print(f"[Supabase DB] Fetch Exception: {e}")
+        return {"ok": True, "data": []}
+
 # Serve SEO landing pages under static/features/
 @app.get("/features/{feature_id}")
 def serve_feature(feature_id: str):

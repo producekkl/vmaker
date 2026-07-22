@@ -708,6 +708,7 @@ async function checkAuth() {
         checkHealth();
         setMode('image');
         setupDragAndDrop();
+        loadGenerationsHistory();
     } catch (e) {
         console.error('Auth failed', e);
         window.location.href = '/login';
@@ -1029,8 +1030,8 @@ async function generateImage(prompt) {
         // Auto-set generated image as I2V reference for video mode
         setImageRef(imgSrc);
 
-        // Add to gallery
-        addToGallery('image', imgSrc, prompt);
+        // Add to gallery & save to Supabase Storage/DB
+        addToGallery('image', imgSrc, prompt, model);
         setUIState('success');
         showToast('✅ 이미지 생성 완료! VIDEO 탭으로 전환하면 이 이미지 기반으로 영상을 만들 수 있습니다.');
     } catch (err) {
@@ -1126,8 +1127,8 @@ function startPolling(taskType, taskId, prompt) {
                 currentDownloadUrl = data.video_url;
                 document.getElementById('action-bar').style.display = 'flex';
 
-                // Add to gallery
-                addToGallery('video', data.video_url, prompt);
+                // Add to gallery & save to Supabase Storage/DB
+                addToGallery('video', data.video_url, prompt, model);
                 setUIState('success');
                 showToast('🎉 비디오 생성 완료!');
             } else if (st === 'failed') {
@@ -1147,11 +1148,63 @@ function startPolling(taskType, taskId, prompt) {
 }
 
 // =====================================================
-// GALLERY
+// GALLERY & SUPABASE STORAGE/DB HISTORY INTEGRATION
 // =====================================================
-function addToGallery(type, src, prompt) {
-    galleryItems.unshift({ type, src, prompt, ts: Date.now() });
+async function loadGenerationsHistory() {
+    if (!currentSession?.user?.id) return;
+    try {
+        const userId = currentSession.user.id;
+        const res = await fetch(`/api/generations?user_id=${encodeURIComponent(userId)}`);
+        if (res.ok) {
+            const result = await res.json();
+            if (result.ok && Array.isArray(result.data)) {
+                galleryItems = result.data.map(row => ({
+                    type: row.type || 'image',
+                    src: row.image_url,
+                    prompt: row.prompt,
+                    model: row.model_name,
+                    ts: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+                }));
+                renderGallery();
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load generations history:', e);
+    }
+}
+
+async function addToGallery(type, src, prompt, modelName) {
+    const item = { type, src, prompt, model: modelName || '', ts: Date.now() };
+    galleryItems.unshift(item);
     renderGallery();
+
+    // Save to Supabase Storage & DB if logged in
+    const userId = currentSession?.user?.id;
+    if (userId) {
+        try {
+            const body = {
+                user_id: userId,
+                prompt: prompt || '',
+                image_url: src,
+                model_name: modelName || (document.getElementById('sel-model') ? document.getElementById('sel-model').value : 'nano-banana'),
+                type: type || 'image'
+            };
+            const saveRes = await fetch('/api/generations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                body: JSON.stringify(body)
+            });
+            if (saveRes.ok) {
+                const saveResult = await saveRes.json();
+                if (saveResult.ok && saveResult.data && saveResult.data.image_url) {
+                    item.src = saveResult.data.image_url;
+                    renderGallery();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to save generation to Supabase:', e);
+        }
+    }
 }
 
 function filterGallery(filter) {
