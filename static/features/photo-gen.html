@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 사진 생성 - MotionPix</title>
+    <meta name="description" content="MotionPix의 고성능 AI 사진 생성기로 텍스트 프롬프트만 입력하여 실사풍, 3D 캐릭터, 일러스트 등 다양한 스타일의 고품질 이미지를 생성하세요.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #07070a;
+            --panel-bg: rgba(13, 13, 18, 0.6);
+            --panel-border: rgba(255, 255, 255, 0.05);
+            --accent-primary: #8b5cf6; /* violet-500 */
+            --accent-secondary: #ec4899; /* pink-500 */
+            --accent-glow: rgba(139, 92, 246, 0.35);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --input-bg: rgba(0, 0, 0, 0.4);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.05) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.02em;
+            text-decoration: none;
+        }
+
+        .logo-dot {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-primary);
+            display: inline-block;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--panel-border);
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .hero-section {
+            max-width: 900px;
+            margin: 4rem auto 2rem auto;
+            text-align: center;
+            padding: 0 2rem;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #a78bfa;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2.5rem auto;
+            line-height: 1.6;
+        }
+
+        .cta-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            width: 100%;
+            margin: 4rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 3rem;
+            text-align: center;
+            border-top: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">
+            <span class="logo-dot"></span>MotionPix
+        </a>
+        <nav class="nav-links">
+            <a href="/features/photo-gen" class="nav-btn active">AI 사진 생성</a>
+            <a href="/features/video-gen" class="nav-btn">AI 영상 생성</a>
+            <a href="/features/img-to-video" class="nav-btn">이미지→영상</a>
+            <a href="/features/txt-to-video" class="nav-btn">텍스트→영상</a>
+            <a href="/login" class="nav-btn" style="margin-left: 1rem;">Login</a>
+        </nav>
+    </header>
+
+    <section class="hero-section">
+        <span class="hero-badge">AI Photo Generator</span>
+        <h1>텍스트 하나로 완성되는<br>고화질 AI 사진 생성</h1>
+        <p class="hero-desc">프롬프트를 입력하는 즉시 최고 수준의 극사실적 인물 사진부터 일러스트, 3D 디자인 및 배경 이미지까지 완벽하게 제작합니다.</p>
+        <div class="cta-group">
+            <a href="/motionpix" class="btn-primary">스튜디오에서 시작하기</a>
+        </div>
+    </section>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="card-icon">✨</div>
+            <div class="card-title">극사실주의 고화질 이미지</div>
+            <div class="card-desc">피부 질감, 조명, 미세한 디테일까지 잡아내는 압도적인 리얼리즘 이미지를 생성합니다.</div>
+        </div>
+        <div class="feature-card">
+            <div class="card-icon">🎨</div>
+            <div class="card-title">다양한 화풍 & 스타일 필터</div>
+            <div class="card-desc">애니메이션, 시네마틱 3D, 유화, 펜 아트 등 원하는 스타일 키워드 터치 한 번으로 적용합니다.</div>
+        </div>
+        <div class="feature-card">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">초고속 이미지 생성 엔진</div>
+            <div class="card-desc">고정밀 추론 엔진을 탑재하여 평균 5초 이내에 선명하고 완성도 높은 사진을 완성합니다.</div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 MotionPix. All rights reserved.</p>
+    </footer>
+</body>
+</html>

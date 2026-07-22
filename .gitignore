@@ -1,0 +1,25 @@
+# Environment variables (API Keys, Secrets)
+.env
+*.env
+
+# Python cache & virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# Temp media & generated assets
+static/downloads/
+*.mp4
+*.jpg
+*.jpeg
+*.png
+*.webp
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

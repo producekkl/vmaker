@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBANANA AI - Premium Video & Art Showcase</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #030306;
+            --panel-bg: rgba(13, 13, 18, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.05);
+            --accent-primary: #8b5cf6; /* violet-500 */
+            --accent-secondary: #ec4899; /* pink-500 */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 45%);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header styling */
+        header {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.03em;
+        }
+
+        .logo-dot {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-primary);
+            display: inline-block;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
+        }
+
+        .btn-launch {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 0.7rem 1.6rem;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+            filter: brightness(1.1);
+        }
+
+        /* Hero Section */
+        .hero {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 6rem 2rem 4rem 2rem;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .badge-premium {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(8px);
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: 4.2rem;
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 40%, #a78bfa 70%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            max-width: 680px;
+            margin: 0 auto 2.5rem auto;
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 1.1rem 2.2rem;
+            border-radius: 14px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(139, 92, 246, 0.6);
+            filter: brightness(1.15);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+            padding: 1.1rem 2.2rem;
+            border-radius: 14px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Showcase / Gallery Section */
+        .showcase-section {
+            max-width: 1400px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+            z-index: 10;
+            position: relative;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.4rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.3rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .filter-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        /* Portfolio Grid */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .portfolio-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .portfolio-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(139, 92, 246, 0.25);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(139, 92, 246, 0.1);
+        }
+
+        .media-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .portfolio-card:hover .card-media {
+            transform: scale(1.04);
+        }
+
+        .media-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 50%);
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem;
+        }
+
+        .play-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 50px;
+            height: 50px;
+            background: rgba(139, 92, 246, 0.9);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+        }
+
+        .portfolio-card:hover .play-indicator {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .play-indicator svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            margin-left: 2px;
+        }
+
+        .card-content {
+            padding: 1.2rem;
+        }
+
+        .badge-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 0.6rem;
+        }
+
+        .badge-tag.video {
+            background-color: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .badge-tag.image {
+            background-color: rgba(236, 72, 153, 0.15);
+            color: #f472b6;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 3, 6, 0.92);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 960px;
+            width: 100%;
+            background: #0d0d12;
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-title-text {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-body video, .modal-body img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* Footer */
+        footer {
+            max-width: 1400px;
+            margin: 6rem auto 0 auto;
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                max-width: 320px;
+                text-align: center;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.2rem;
+            }
+            .filter-tabs {
+                width: 100%;
+                justify-content: center;
+            }
+            footer {
+                flex-direction: column;
+                gap: 1.5rem;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navigation -->
+    <header>
+        <div class="logo">
+            <span class="logo-dot"></span>
+            MotionPix
+        </div>
+        <nav style="display: flex; gap: 1.5rem; align-items: center;">
+            <a href="/" class="nav-link" style="color: var(--text-main); font-weight: 700; border-bottom: 2px solid var(--accent-primary); padding-bottom: 4px;">Main</a>
+            <a href="/motionpix" class="nav-link" style="color: var(--text-muted); font-weight: 500;">Create</a>
+            <a href="/login" class="nav-link" style="color: var(--text-muted); font-weight: 500;">Login</a>
+        </nav>
+    </header>
+
+    <!-- Hero Area -->
+    <section class="hero">
+        <div class="badge-premium">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.2rem;">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            MotionPix Creative Hub
+        </div>
+        <h1>Transform Imagination<br>Into Ultra-HD Realities</h1>
+        <p>Kling AI 비디오 생성기와 Gemini 3.5 이미지 편집 도구를 활용해 제작된 고화질 비디오 및 작품 포트폴리오를 감상하고, 지금 바로 자신만의 명작을 창조해 보세요.</p>
+        <div class="hero-actions">
+            <a href="/motionpix" class="btn-primary">Launch Studio (시작하기)</a>
+            <a href="#portfolio" class="btn-secondary">Explore Showcase (둘러보기)</a>
+        </div>
+    </section>
+
+    <!-- Portfolio Gallery Section -->
+    <section class="showcase-section" id="portfolio">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">AI Portfolio Showcase</h2>
+                <p class="section-desc">최근에 생성된 비디오와 다채로운 아트웍 포트폴리오입니다.</p>
+            </div>
+            
+            <div class="filter-tabs">
+                <button class="filter-btn active" data-filter="all">All Items</button>
+                <button class="filter-btn" data-filter="video">Videos</button>
+                <button class="filter-btn" data-filter="image">Images</button>
+            </div>
+        </div>
+
+        <div class="portfolio-grid" id="portfolio-grid">
+            <!-- Dynamic and Fallback items will be injected here -->
+        </div>
+    </section>
+
+    <!-- Modal Popup for Previews -->
+    <div class="modal" id="media-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title-text" id="modal-title">Prompt Details</span>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Video or Image injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-logo">BBANANA AI</div>
+        <div>© 2026 BBANANA AI Studio. All rights reserved. Powered by Kling & Gemini.</div>
+    </footer>
+
+    <!-- Frontend logic for showcase -->
+    <script>
+        // Premium default mockup files if DB is empty
+        const fallbackAssets = [
+            {
+                type: "video",
+                prompt: "A beautiful cinematic shot of neon-lit cyberpunk streets in Tokyo, heavy rain, reflection, 4k",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-neon-light-from-a-building-in-a-rainy-night-42211-large.mp4"
+            },
+            {
+                type: "video",
+                prompt: "Slow motion of a cute baby panda playing with snow in the winter forest, cinematic lighting, 4k resolution",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-cute-panda-bear-eating-bamboo-leaves-42095-large.mp4"
+            },
+            {
+                type: "image",
+                prompt: "A gorgeous flat vector illustration of a banana wearing sunglasses on a beach, vaporwave sunset background",
+                source_url: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&auto=format&fit=crop&q=60"
+            },
+            {
+                type: "video",
+                prompt: "Epic fantasy view of floating crystal castles above golden clouds during sunset, hyper detailed",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-clouds-and-sun-rays-from-above-41710-large.mp4"
+            },
+            {
+                type: "image",
+                prompt: "Cyberpunk ninja standing on top of a skyscraper, neon glowing katana, digital painting, 4k",
+                source_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=60"
+            },
+            {
+                type: "video",
+                prompt: "Abstract colorful fluid painting flowing smoothly in water, slow motion camera track, ultra HD",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-flowing-purple-and-pink-paint-42777-large.mp4"
+            },
+            {
+                type: "image",
+                prompt: "Hyper-realistic portrait of an astronaut exploring a neon jungle planet, digital art",
+                source_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=60"
+            },
+            {
+                type: "video",
+                prompt: "Cinematic drone shot flying through snow covered Swiss Alps during morning sunrise, golden light",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-snowy-mountain-peaks-in-scenic-sunset-light-41838-large.mp4"
+            },
+            {
+                type: "image",
+                prompt: "Serene traditional Japanese garden with sakura cherry blossoms falling into a koi pond, watercolor painting style",
+                source_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop&q=60"
+            },
+            {
+                type: "video",
+                prompt: "Hyper-realistic close up of coffee beans being roasted, steam rising, high detail macro lens",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-pouring-freshly-roasted-coffee-beans-41584-large.mp4"
+            },
+            {
+                type: "image",
+                prompt: "Mystic ancient wizard library filled with glowing spellbooks and magical artifacts, 3D render render",
+                source_url: "https://images.unsplash.com/photo-1519074002996-a69e7ac46a42?w=800&auto=format&fit=crop&q=60"
+            },
+            {
+                type: "video",
+                prompt: "Underwater tracking shot of colorful coral reef filled with exotic tropical fish, sun rays piercing through water",
+                source_url: "https://assets.mixkit.co/videos/preview/mixkit-swimming-underwater-with-tropical-fish-41648-large.mp4"
+            }
+        ];
+
+        const gridElement = document.getElementById("portfolio-grid");
+        const modal = document.getElementById("media-modal");
+        const modalTitle = document.getElementById("modal-title");
+        const modalBody = document.getElementById("modal-body");
+        const modalClose = document.getElementById("modal-close");
+
+        let loadedAssets = [];
+
+        // Fetch dynamic assets from API
+        async function fetchPortfolio() {
+            try {
+                const response = await fetch("/api/assets");
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        loadedAssets = data;
+                        renderGrid(loadedAssets);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load backend assets, serving premium defaults", err);
+            }
+            
+            // Fallback to presets if api returns empty/fails
+            loadedAssets = fallbackAssets;
+            renderGrid(loadedAssets);
+        }
+
+        // Render grid items
+        function renderGrid(assets) {
+            gridElement.innerHTML = "";
+            assets.forEach(asset => {
+                const isVideo = asset.type.toLowerCase().includes("video");
+                
+                const card = document.createElement("div");
+                card.className = `portfolio-card ${isVideo ? 'type-video' : 'type-image'}`;
+                card.onclick = () => openModal(asset);
+
+                let mediaHTML = "";
+                if (isVideo) {
+                    mediaHTML = `
+                        <video class="card-media" src="${asset.source_url}" muted loop playsinline></video>
+                        <div class="play-indicator">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
+                    `;
+                } else {
+                    mediaHTML = `
+                        <img class="card-media" src="${asset.source_url}" alt="Portfolio Art" loading="lazy" />
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="media-container">
+                        ${mediaHTML}
+                        <div class="media-overlay"></div>
+                    </div>
+                    <div class="card-content">
+                        <span class="badge-tag ${isVideo ? 'video' : 'image'}">${isVideo ? 'Video' : 'Image'}</span>
+                        <div class="card-title" title="${asset.prompt}">${asset.prompt}</div>
+                    </div>
+                `;
+
+                // Auto-play/pause videos on hover
+                if (isVideo) {
+                    const videoEl = card.querySelector("video");
+                    card.addEventListener("mouseenter", () => videoEl.play().catch(()=>{}));
+                    card.addEventListener("mouseleave", () => {
+                        videoEl.pause();
+                        videoEl.currentTime = 0;
+                    });
+                }
+
+                gridElement.appendChild(card);
+            });
+        }
+
+        // Filter tabs
+        document.querySelectorAll(".filter-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+
+                const filter = btn.getAttribute("data-filter");
+                if (filter === "all") {
+                    renderGrid(loadedAssets);
+                } else {
+                    const filtered = loadedAssets.filter(item => item.type.toLowerCase().includes(filter));
+                    renderGrid(filtered);
+                }
+            });
+        });
+
+        // Open Modal
+        function openModal(asset) {
+            modalTitle.textContent = asset.prompt;
+            modalBody.innerHTML = "";
+
+            const isVideo = asset.type.toLowerCase().includes("video");
+            if (isVideo) {
+                const video = document.createElement("video");
+                video.src = asset.source_url;
+                video.controls = true;
+                video.autoplay = true;
+                video.style.maxWidth = "100%";
+                video.style.maxHeight = "100%";
+                modalBody.appendChild(video);
+            } else {
+                const img = document.createElement("img");
+                img.src = asset.source_url;
+                img.style.maxWidth = "100%";
+                img.style.maxHeight = "100%";
+                modalBody.appendChild(img);
+            }
+
+            modal.style.display = "flex";
+        }
+
+        // Close Modal
+        function closeModal() {
+            modal.style.display = "none";
+            modalBody.innerHTML = ""; // Stop playing video
+        }
+
+        modalClose.onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        };
+
+        // Initialize Page
+        fetchPortfolio();
+    </script>
+</body>
+</html>

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionPix - Login & Sign Up</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --bg-base: #030306;
+            --panel-bg: rgba(13, 13, 18, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.05);
+            --accent-primary: #8b5cf6; /* violet-500 */
+            --accent-secondary: #ec4899; /* pink-500 */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 45%);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.03em;
+            text-decoration: none;
+        }
+
+        .logo-dot {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-primary);
+            display: inline-block;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-main);
+        }
+
+        .login-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem 2rem;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(139, 92, 246, 0.05);
+            backdrop-filter: blur(20px);
+        }
+
+        .auth-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 60%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 0.85rem 1.1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent-primary);
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.95rem;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+            filter: brightness(1.05);
+        }
+
+        .btn-social {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 0.85rem;
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+
+        .btn-social:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .5em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .5em;
+        }
+
+        .switch-mode-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+        }
+
+        .switch-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .switch-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .success-message {
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        footer {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">
+            <span class="logo-dot"></span>MotionPix
+        </a>
+        <nav>
+            <a href="/" class="nav-link">Main</a>
+            <a href="/motionpix" class="nav-link">Create</a>
+        </nav>
+    </header>
+
+    <div class="login-container">
+        <div class="auth-card">
+            <div id="auth-header">
+                <h1 class="auth-title" id="form-title">Welcome Back</h1>
+                <p class="auth-desc" id="form-desc">MotionPix 계정으로 로그인하여 영상 제작을 시작하세요.</p>
+            </div>
+
+            <div id="error-box" class="error-message"></div>
+            <div id="success-box" class="success-message"></div>
+
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <!-- Additional Field for Sign Up -->
+                <div class="form-group" id="group-name" style="display: none;">
+                    <label for="input-name">이름</label>
+                    <input type="text" id="input-name" placeholder="홍길동">
+                </div>
+
+                <div class="form-group" id="group-company" style="display: none;">
+                    <label for="input-company">회사명 (선택)</label>
+                    <input type="text" id="input-company" placeholder="MotionPix Inc.">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-email">이메일 주소</label>
+                    <input type="email" id="input-email" required placeholder="name@domain.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-password">비밀번호</label>
+                    <input type="password" id="input-password" required placeholder="••••••••">
+                </div>
+
+                <button type="submit" class="btn-submit" id="btn-submit-text">로그인</button>
+            </form>
+
+            <button class="btn-social" onclick="handleGoogleLogin()">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5.04c1.62 0 3.08.56 4.22 1.64l3.15-3.15C17.45 1.76 14.9 1 12 1 7.37 1 3.4 3.63 1.44 7.48l3.77 2.92C6.1 7.24 8.81 5.04 12 5.04z"/>
+                    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.46c-.28 1.48-1.12 2.73-2.38 3.58l3.7 2.87c2.16-1.99 3.41-4.93 3.41-8.6z"/>
+                    <path fill="#FBBC05" d="M5.21 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.44 7.02C.52 8.91 0 11.01 0 13.25s.52 4.34 1.44 6.23l3.77-2.92z"/>
+                    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.03.69-2.35 1.1-3.96 1.1-3.19 0-5.9-2.2-6.86-5.16L1.44 16.1C3.4 19.95 7.37 22.5 12 23z"/>
+                </svg>
+                Google 계정으로 계속하기
+            </button>
+
+            <div class="switch-mode-text" id="switch-container">
+                계정이 없으신가요? <span class="switch-link" onclick="toggleAuthMode()">회원가입</span>
+            </div>
+            
+            <!-- Forgot Password Action -->
+            <div class="switch-mode-text" id="forgot-password-container" style="margin-top: 0.5rem; font-size: 0.85rem;">
+                <span class="switch-link" onclick="handleForgotPassword()">비밀번호를 잊으셨나요?</span>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div>© 2026 MotionPix Studio. All rights reserved.</div>
+    </footer>
+
+    <script>
+        // Supabase Configuration
+        let supabaseClient = null;
+        let isSignUpMode = false;
+
+        async function initSupabase() {
+            try {
+                // Fetch Supabase configuration keys dynamically from health endpoint
+                const res = await fetch("/api/supabase/config");
+                const config = await res.json();
+                if (config.supabase_url && config.supabase_key) {
+                    supabaseClient = supabase.createClient(config.supabase_url, config.supabase_key);
+                } else {
+                    showError("Supabase config is missing. Please contact administrator.");
+                }
+            } catch (err) {
+                showError("Failed to initialize authentication service.");
+            }
+        }
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            
+            const formTitle = document.getElementById("form-title");
+            const formDesc = document.getElementById("form-desc");
+            const groupName = document.getElementById("group-name");
+            const groupCompany = document.getElementById("group-company");
+            const btnSubmitText = document.getElementById("btn-submit-text");
+            const switchContainer = document.getElementById("switch-container");
+            const forgotPasswordContainer = document.getElementById("forgot-password-container");
+
+            clearAlerts();
+
+            if (isSignUpMode) {
+                formTitle.textContent = "Create Account";
+                formDesc.textContent = "MotionPix의 올인원 생성 생태계에 참여하세요.";
+                groupName.style.display = "flex";
+                groupCompany.style.display = "flex";
+                btnSubmitText.textContent = "회원가입";
+                switchContainer.innerHTML = '이미 계정이 있으신가요? <span class="switch-link" onclick="toggleAuthMode()">로그인</span>';
+                forgotPasswordContainer.style.display = "none";
+            } else {
+                formTitle.textContent = "Welcome Back";
+                formDesc.textContent = "MotionPix 계정으로 로그인하여 영상 제작을 시작하세요.";
+                groupName.style.display = "none";
+                groupCompany.style.display = "none";
+                btnSubmitText.textContent = "로그인";
+                switchContainer.innerHTML = '계정이 없으신가요? <span class="switch-link" onclick="toggleAuthMode()">회원가입</span>';
+                forgotPasswordContainer.style.display = "block";
+            }
+        }
+
+        function showError(msg) {
+            const errorBox = document.getElementById("error-box");
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+            document.getElementById("success-box").style.display = "none";
+        }
+
+        function showSuccess(msg) {
+            const successBox = document.getElementById("success-box");
+            successBox.textContent = msg;
+            successBox.style.display = "block";
+            document.getElementById("error-box").style.display = "none";
+        }
+
+        function clearAlerts() {
+            document.getElementById("error-box").style.display = "none";
+            document.getElementById("success-box").style.display = "none";
+        }
+
+        // Handle Form Submit (Email Signup / Login)
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            clearAlerts();
+
+            if (!supabaseClient) {
+                showError("인증 모듈이 올바르게 초기화되지 않았습니다.");
+                return;
+            }
+
+            const email = document.getElementById("input-email").value.trim();
+            const password = document.getElementById("input-password").value;
+
+            if (isSignUpMode) {
+                const name = document.getElementById("input-name").value.trim();
+                const company = document.getElementById("input-company").value.trim();
+
+                if (!name) {
+                    showError("이름을 입력해 주세요.");
+                    return;
+                }
+
+                try {
+                    // 1. Supabase Sign Up
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email: email,
+                        password: password,
+                        options: {
+                            data: {
+                                full_name: name,
+                                company_name: company
+                            }
+                        }
+                    });
+
+                    if (error) throw error;
+
+                    // 2. Report profiles data registration to our local backend
+                    if (data.user) {
+                        const localRes = await fetch("/api/auth/register-profile", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                uid: data.user.id,
+                                email: email,
+                                name: name,
+                                company: company,
+                                plan: "free",
+                                initial_credits: 50 // Auto-gift 50 free credits
+                            })
+                        });
+                        if (!localRes.ok) console.warn("Failed to create local profile database record");
+                    }
+
+                    showSuccess("인증용 확인 이메일이 발송되었습니다! 메일함을 확인해주세요.");
+                } catch (err) {
+                    showError(err.message || "회원가입 도중 에러가 발생했습니다.");
+                }
+            } else {
+                // Log In Mode
+                try {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+
+                    if (error) throw error;
+
+                    if (data.session) {
+                        // Store session tokens locally for api authorizations
+                        localStorage.setItem("supabase_access_token", data.session.access_token);
+                        localStorage.setItem("supabase_user_uid", data.user.id);
+                        localStorage.setItem("v_user", "supabase_authenticated"); // backwards compatibility token
+                        localStorage.setItem("v_pass", data.session.access_token); 
+                        
+                        showSuccess("로그인 성공! 대시보드로 이동합니다.");
+                        setTimeout(() => { window.location.href = "/motionpix"; }, 800);
+                    }
+                } catch (err) {
+                    showError(err.message || "로그인 도중 에러가 발생했습니다.");
+                }
+            }
+        }
+
+        // Google Social Login
+        async function handleGoogleLogin() {
+            if (!supabaseClient) {
+                alert("인증 서비스 초기화 에러");
+                return;
+            }
+            try {
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + "/motionpix"
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                showError(err.message || "구글 로그인 실행 도중 에러가 발생했습니다.");
+            }
+        }
+
+        // Forgot Password
+        async function handleForgotPassword() {
+            clearAlerts();
+            const email = document.getElementById("input-email").value.trim();
+            if (!email) {
+                showError("비밀번호 재설정을 위해 먼저 이메일 주소를 입력해 주세요.");
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + "/login"
+                });
+                if (error) throw error;
+                showSuccess("비밀번호 재설정용 링크를 이메일로 발송하였습니다.");
+            } catch (err) {
+                showError(err.message || "비밀번호 재설정 메일 발송 도중 오류가 발생했습니다.");
+            }
+        }
+
+        // Load Supabase Client config dynamically
+        initSupabase();
+    </script>
+</body>
+</html>

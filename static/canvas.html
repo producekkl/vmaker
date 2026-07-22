@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionPix React Flow Canvas Builder</title>
+
+    <!-- React & ReactDOM (Production) CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+    <!-- Babel CDN (JSX compiler) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- React Flow CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.10.3/dist/style.css">
+
+    <!-- React Flow UMD Bundle (Unified Package) -->
+    <script src="https://cdn.jsdelivr.net/npm/reactflow@11.10.3/dist/umd/index.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html,
+        #root {
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: #0d0e12;
+            color: #f0f0f5;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: 50px;
+            background: #111218;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+            position: relative;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-bar-back {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #a1a1aa;
+            cursor: pointer;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .top-bar-back:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .top-bar-title span {
+            color: #f59e0b;
+            font-weight: 800;
+        }
+
+        .rule-badge {
+            font-size: 0.75rem;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            color: #fcd34d;
+            padding: 4px 12px;
+            border-radius: 999px;
+        }
+
+        /* Toolbar */
+        .left-bar {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #16171d;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 50;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+        }
+
+        .tool-btn {
+            width: 46px;
+            height: 46px;
+            border-radius: 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #71717a;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            transition: all 0.18s;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e4e4e7;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tool-sep {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 2px 0;
+        }
+
+        /* Custom Nodes Design */
+        .custom-node {
+            width: 320px;
+            background: #181920;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            color: #f0f0f5;
+            padding: 0;
+            overflow: hidden;
+            font-size: 0.8rem;
+        }
+
+        .custom-node.selected {
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .node-hdr {
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .node-hdr-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .node-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .node-label {
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .node-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-node-action {
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.68rem;
+            padding: 4px 9px;
+            cursor: pointer;
+            transition: all 0.15s;
+            z-index: 999;
+        }
+
+        .btn-node-run {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .btn-node-run:hover {
+            background: #fbbf24;
+        }
+
+        .btn-node-dl {
+            background: #10b981;
+            color: #000;
+        }
+
+        .node-body {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .node-textarea {
+            width: 100%;
+            background: #111318;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #e4e4e7;
+            padding: 8px;
+            font-size: 0.8rem;
+            resize: vertical;
+            min-height: 60px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .node-select {
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #d1d5db;
+            padding: 2px 6px;
+            font-size: 0.72rem;
+            outline: none;
+        }
+
+        .node-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #a1a1aa;
+        }
+
+        /* Dropzone */
+        .node-dropzone {
+            width: 100%;
+            height: 120px;
+            background: #0a0b10;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #71717a;
+            cursor: pointer;
+            overflow: hidden;
+            font-size: 0.7rem;
+        }
+
+        .node-dropzone img,
+        .node-dropzone video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Handles styling */
+        .react-flow__handle {
+            width: 12px;
+            height: 12px;
+            background: #0ea5e9;
+            border: 2px solid #181920;
+            transition: transform 0.15s;
+        }
+
+        .react-flow__handle:hover {
+            transform: scale(1.3);
+            background: #f59e0b;
+        }
+
+        /* React Flow Edge Override */
+        .react-flow__edge-path {
+            stroke: #0ea5e9;
+            stroke-width: 3;
+            transition: stroke 0.2s;
+        }
+
+        .react-flow__edge.selected .react-flow__edge-path {
+            stroke: #f59e0b;
+        }
+
+        .run-btn {
+            background: #f59e0b;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+        }
+
+        .run-btn:hover {
+            background: #fbbf24;
+            transform: translateX(-50%) translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+        }
+
+        #toast-root.show {
+            opacity: 1 !important;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useCallback, useRef, useEffect } = React;
+
+        // Resolve ReactFlow components from unified ReactFlow global variable
+        const RF_raw = window.ReactFlow || {};
+        const RF = RF_raw.default || RF_raw;
+
+        const ReactFlow = RF.ReactFlow || RF_raw.ReactFlow || RF;
+        const Handle = RF.Handle || RF_raw.Handle;
+        const Position = RF.Position || RF_raw.Position;
+        const applyNodeChanges = RF.applyNodeChanges || RF_raw.applyNodeChanges;
+        const applyEdgeChanges = RF.applyEdgeChanges || RF_raw.applyEdgeChanges;
+        const addEdge = RF.addEdge || RF_raw.addEdge;
+        const Controls = RF.Controls || RF_raw.Controls;
+
+        // Custom Toast Utility
+        function showToast(msg) {
+            const el = document.getElementById('toast-root');
+            if (el) {
+                el.textContent = msg;
+                el.classList.add('show');
+                if (window._toastTimeout) clearTimeout(window._toastTimeout);
+                window._toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+            }
+        }
+
+        // Cost Calculation Utilities (Hoisted)
+        function calculateImageCost(model, res) {
+            let base = 0.09;
+            const m = (model || '').toLowerCase();
+            if (m.includes('standard') || m.includes('2.5')) base = 0.039;
+            else if (m.includes('pro') || m.includes('3-pro')) base = 0.240;
+            else base = 0.090;
+
+            const resMult = res === '2k' ? 1.5 : 1.0;
+            return (base * resMult).toFixed(3);
+        }
+
+        function calculateVideoCost(model, dur, res, sound) {
+            let base = 0.58;
+            const m = (model || '').toLowerCase();
+            if (m.includes('turbo') || m.includes('2.5')) base = 0.28;
+            else if (m.includes('i2v') || m.includes('2.6')) base = 0.45;
+            else if (m.includes('omni')) base = 0.79;
+            else base = 0.58;
+
+            const durMult = (parseInt(dur) || 5) / 5;
+            const resMult = (res === 'pro' || res === '1080p') ? 1.5 : 1.0;
+            const soundCost = sound === 'on' ? 0.10 : 0.0;
+
+            const total = (base * durMult * resMult) + soundCost;
+            return total.toFixed(2);
+        }
+
+        // 1. Prompt Node Component
+        const PromptNode = ({ data, id }) => {
+            const onChange = (field, value) => {
+                data.onChange(id, field, value);
+            };
+
+            return (
+                <div className={`custom-node ${data.selected ? 'selected' : ''}`}>
+                    <div className="node-hdr" style={{ background: '#1c1e2a' }}>
+                        <div className="node-hdr-left">
+                            <span className="node-dot" style={{ background: '#6366f1' }}></span>
+                            <span className="node-label" style={{ color: '#a5b4fc' }}>Prompt Node</span>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#71717a' }}>{data.status || '대기'}</span>
+                    </div>
+                    <div className="node-body">
+                        <div className="node-textarea-container">
+                            <div className="node-row" style={{ marginBottom: '2px' }}>프롬프트 (Prompt)</div>
+                            <textarea
+                                className="node-textarea"
+                                placeholder="시나리오 / 프롬프트를 입력하세요..."
+                                value={data.prompt || ''}
+                                onChange={(e) => onChange('prompt', e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <div className="node-row" style={{ marginBottom: '2px' }}>네거티브 프롬프트</div>
+                            <input
+                                type="text"
+                                className="node-select"
+                                style={{ width: '100%', maxWidth: '100%' }}
+                                placeholder="제외할 요소..."
+                                value={data.negativePrompt || ''}
+                                onChange={(e) => onChange('negativePrompt', e.target.value)}
+                            />
+                        </div>
+                        <div className="node-row">
+                            <span>화풍 스타일</span>
+                            <select className="node-select" value={data.style || 'Cinematic'} onChange={(e) => onChange('style', e.target.value)}>
+                                <option value="Cinematic">Cinematic</option>
+                                <option value="Anime">Anime</option>
+                                <option value="Photorealistic">Photorealistic</option>
+                                <option value="3D Render">3D Render</option>
+                                <option value="Cyberpunk">Cyberpunk</option>
+                            </select>
+                        </div>
+                        <div className="node-row">
+                            <span>기본 비율</span>
+                            <select className="node-select" value={data.ratio || '16:9'} onChange={(e) => onChange('ratio', e.target.value)}>
+                                <option value="16:9">16:9</option>
+                                <option value="9:16">9:16</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:3">4:3</option>
+                            </select>
+                        </div>
+                    </div>
+                    <Handle type="source" position={Position.Right} id="out" />
+                </div>
+            );
+        };
+
+        // 2. Image Node Component
+        const ImageNode = ({ data, id }) => {
+            const [isDragging, setIsDragging] = useState(false);
+
+            const onChange = (field, value) => {
+                data.onChange(id, field, value);
+            };
+
+            const triggerFile = () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            onChange('inputImage', ev.target.result);
+                            onChange('imageUrl', null);
+                            showToast('📷 이미지 파일 주입 완료!');
+                        };
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                };
+                input.click();
+            };
+
+            const downloadResult = (e) => {
+                e.stopPropagation();
+                if (!data.imageUrl) return;
+                const a = document.createElement('a');
+                a.href = `/api/download/proxy?url=${encodeURIComponent(data.imageUrl)}&filename=motionpix-image-${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('💾 다운로드가 시작되었습니다!');
+            };
+
+            const handleImageClick = (e) => {
+                e.stopPropagation();
+                const targetImg = data.imageUrl || data.inputImage;
+                if (targetImg) {
+                    if (data.onPreview) data.onPreview(targetImg);
+                } else {
+                    triggerFile();
+                }
+            };
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(true);
+            };
+
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            onChange('inputImage', ev.target.result);
+                            onChange('imageUrl', null);
+                            showToast('📷 이미지 드래그앤드롭 주입 완료!');
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        showToast('⚠️ 이미지 파일만 드롭할 수 있습니다.');
+                    }
+                }
+            };
+
+            return (
+                <div className={`custom-node ${data.selected ? 'selected' : ''}`}>
+                    <Handle type="target" position={Position.Left} id="in" />
+                    <div className="node-hdr" style={{ background: '#1a2218' }}>
+                        <div className="node-hdr-left">
+                            <span className="node-dot" style={{ background: '#10b981' }}></span>
+                            <span className="node-label" style={{ color: '#6ee7b7' }}>Image Node</span>
+                        </div>
+                        <div className="node-btn-group">
+                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>▶ 실행</button>
+                            {data.imageUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>💾</button>}
+                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '대기'}</span>
+                        </div>
+                    </div>
+                    <div className="node-body">
+                        <div 
+                            className="node-dropzone" 
+                            onClick={handleImageClick}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            style={{ 
+                                position: 'relative', 
+                                overflow: 'hidden', 
+                                cursor: (data.imageUrl || data.inputImage) ? 'zoom-in' : 'pointer',
+                                border: isDragging ? '2px dashed #10b981' : undefined,
+                                background: isDragging ? 'rgba(16, 185, 129, 0.15)' : undefined
+                            }}
+                        >
+                            {data.imageUrl || data.inputImage ? (
+                                <div style={{ position: 'relative', width: '100%', height: '100%' }} className="img-preview-wrapper">
+                                    <img src={data.imageUrl || data.inputImage} alt="input" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <div style={{
+                                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#fff', fontSize: '0.78rem', fontWeight: 600, gap: '4px',
+                                        opacity: 0, transition: 'opacity 0.2s'
+                                    }} className="hover-overlay">
+                                        🔍 클릭하여 크게 보기
+                                    </div>
+                                </div>
+                            ) : (
+                                <span>이미지를 여기로 드래그 & 드롭 / 클릭</span>
+                            )}
+                        </div>
+                        <div className="node-row">
+                            <span>AI 모델</span>
+                            <select className="node-select" value={data.model || 'gemini-3.1-flash-image-preview'} onChange={(e) => onChange('model', e.target.value)}>
+                                <option value="gemini-2.5-flash-image">Nano Banana Standard</option>
+                                <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
+                                <option value="gemini-3-pro-image-preview">Nano Banana Pro</option>
+                            </select>
+                        </div>
+                        <div className="node-row">
+                            <span>출력 해상도</span>
+                            <select className="node-select" value={data.res || '1k'} onChange={(e) => onChange('res', e.target.value)}>
+                                <option value="1k">1K (Standard)</option>
+                                <option value="2k">2K (High Quality)</option>
+                            </select>
+                        </div>
+                        <div className="node-row" style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', justifyContent: 'space-between', color: '#6ee7b7', fontWeight: 600 }}>
+                            <span>예상 소모 코인:</span>
+                            <span style={{ background: '#12251a', padding: '2px 8px', borderRadius: '4px', border: '1px solid #10b981', fontSize: '0.75rem' }}>
+                                💰 {Math.round(parseFloat(calculateImageCost(data.model, data.res)) * 100)} 코인 (${calculateImageCost(data.model, data.res)})
+                            </span>
+                        </div>
+                    </div>
+                    <Handle type="source" position={Position.Right} id="out" />
+                </div>
+            );
+        };
+
+        // 3. Video Node Component
+        const VideoNode = ({ data, id }) => {
+            const onChange = (field, value) => {
+                data.onChange(id, field, value);
+            };
+
+            const downloadResult = (e) => {
+                e.stopPropagation();
+                if (!data.videoUrl) return;
+                const a = document.createElement('a');
+                a.href = `/api/download/proxy?url=${encodeURIComponent(data.videoUrl)}&filename=motionpix-video-${Date.now()}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('💾 다운로드가 시작되었습니다!');
+            };
+
+            return (
+                <div className={`custom-node ${data.selected ? 'selected' : ''}`}>
+                    <Handle type="target" position={Position.Left} id="in" />
+                    <div className="node-hdr" style={{ background: '#1e1a10' }}>
+                        <div className="node-hdr-left">
+                            <span className="node-dot" style={{ background: '#f59e0b' }}></span>
+                            <span className="node-label" style={{ color: '#fcd34d' }}>Video Node</span>
+                        </div>
+                        <div className="node-btn-group">
+                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>▶ 실행</button>
+                            {data.videoUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>💾</button>}
+                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '대기'}</span>
+                        </div>
+                    </div>
+                    <div className="node-body">
+                        <div className="node-dropzone" style={{ height: '140px' }}>
+                            {data.videoUrl ? (
+                                <video key={data.videoUrl} src={data.videoUrl} controls autoPlay loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <span>생성 대기 중...</span>
+                            )}
+                        </div>
+                        <div className="node-row">
+                            <span>AI 모델</span>
+                            <select className="node-select" value={data.model || 'kling-v3.0'} onChange={(e) => onChange('model', e.target.value)}>
+                                <option value="kling-v3.0">Kling 3.0 Standard</option>
+                                <option value="kling-v2.5-turbo">Kling 2.5 Turbo</option>
+                                <option value="kling-v2.6-i2v">Kling 2.6 I2V</option>
+                                <option value="kling-v3.0-omni">Kling 3.0 Omni</option>
+                            </select>
+                        </div>
+                        <div className="node-row">
+                            <span>비디오 길이</span>
+                            <select className="node-select" value={data.dur || '5'} onChange={(e) => onChange('dur', e.target.value)}>
+                                <option value="5">5초</option>
+                                <option value="10">10초</option>
+                            </select>
+                        </div>
+                        <div className="node-row">
+                            <span>출력 해상도</span>
+                            <select className="node-select" value={data.res || 'std'} onChange={(e) => onChange('res', e.target.value)}>
+                                <option value="std">720p (Standard)</option>
+                                <option value="pro">1080p (High Quality)</option>
+                            </select>
+                        </div>
+                        <div className="node-row">
+                            <span>오디오 (사운드)</span>
+                            <select className="node-select" value={data.sound || 'off'} onChange={(e) => onChange('sound', e.target.value)}>
+                                <option value="off">🔇 오디오 끄기 (Off)</option>
+                                <option value="on">🔊 AI 오디오 생성 (On)</option>
+                            </select>
+                        </div>
+                        <div className="node-row" style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', justifyContent: 'space-between', color: '#fcd34d', fontWeight: 600 }}>
+                            <span>예상 소모 코인:</span>
+                            <span style={{ background: '#2d2410', padding: '2px 8px', borderRadius: '4px', border: '1px solid #f59e0b', fontSize: '0.75rem' }}>
+                                💰 {Math.round(parseFloat(calculateVideoCost(data.model, data.dur, data.res, data.sound)) * 100)} 코인 (${calculateVideoCost(data.model, data.dur, data.res, data.sound)})
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const nodeTypes = {
+            prompt: PromptNode,
+            image: ImageNode,
+            video: VideoNode
+        };
+
+        // Main App Component
+        const App = () => {
+            const [nodes, setNodes] = useState([]);
+            const [edges, setEdges] = useState([]);
+            const [modalImage, setModalImage] = useState(null);
+            const reconnectEdge = useRef(null);
+
+            const handlePreview = (url) => {
+                setModalImage(url);
+            };
+
+            // Refs to prevent stale closure capturing issues in callbacks
+            const nodesRef = useRef([]);
+            const edgesRef = useRef([]);
+            useEffect(() => {
+                nodesRef.current = nodes;
+            }, [nodes]);
+            useEffect(() => {
+                edgesRef.current = edges;
+            }, [edges]);
+
+            const onNodesChange = useCallback((changes) => {
+                setNodes((nds) => applyNodeChanges(changes, nds));
+            }, []);
+
+            const onEdgesChange = useCallback((changes) => {
+                setEdges((eds) => applyEdgeChanges(changes, eds));
+            }, []);
+
+            // Strict connections rules
+            const onConnect = useCallback((connection) => {
+                const fromNode = nodes.find(n => n.id === connection.source);
+                const toNode = nodes.find(n => n.id === connection.target);
+                if (!fromNode || !toNode) return;
+
+                // Validate: Prompt -> Image, Prompt -> Video, Image -> Video only
+                const fType = fromNode.type;
+                const tType = toNode.type;
+                const isValid = (fType === 'prompt' && (tType === 'image' || tType === 'video')) ||
+                    (fType === 'image' && tType === 'video');
+
+                if (isValid) {
+                    setEdges((eds) => addEdge({ ...connection, style: { stroke: '#0ea5e9', strokeWidth: 3 } }, eds));
+                    showToast('🔗 노드가 연결되었습니다!');
+                } else {
+                    showToast('🚫 허용되지 않는 연결입니다. (규칙: Prompt ➔ Image ➔ Video)');
+                }
+            }, [nodes]);
+
+            // Reconnection Handlers (React Flow Standard)
+            const onReconnectStart = useCallback((_, edge) => {
+                reconnectEdge.current = edge;
+            }, []);
+
+            const onReconnect = useCallback((oldEdge, newConnection) => {
+                reconnectEdge.current = null;
+                setEdges((els) => els.map(e => e.id === oldEdge.id ? { ...e, ...newConnection } : e));
+            }, []);
+
+            const onReconnectEnd = useCallback((_, edge) => {
+                if (reconnectEdge.current) {
+                    setEdges((eds) => eds.filter((e) => e.id !== reconnectEdge.current.id));
+                    reconnectEdge.current = null;
+                    showToast('✂️ 연결선이 삭제되었습니다.');
+                }
+            }, []);
+
+            // Node Property Change Handler (Immutable update to trigger React state refresh)
+            const onNodeDataChange = useCallback((nid, field, value) => {
+                setNodes((nds) => nds.map((n) => {
+                    if (n.id === nid) {
+                        return {
+                            ...n,
+                            data: {
+                                ...n.data,
+                                [field]: value
+                            }
+                        };
+                    }
+                    return n;
+                }));
+            }, []);
+
+            // ============================================================
+            // GRAPH TRAVERSAL UTILITIES
+            // ============================================================
+
+            /**
+             * Collect ALL upstream nodes of a given type reachable from targetId.
+             * Performs BFS traversal across edges.
+             */
+            const collectUpstreamByType = (targetId, nodeType, visited = new Set()) => {
+                if (visited.has(targetId)) return [];
+                visited.add(targetId);
+                const results = [];
+                const incomingEdges = edgesRef.current.filter(e => String(e.target) === String(targetId));
+                for (const edge of incomingEdges) {
+                    const src = nodesRef.current.find(n => String(n.id) === String(edge.source));
+                    if (!src) continue;
+                    if (src.type === nodeType) results.push(src);
+                    // recurse deeper
+                    const deeper = collectUpstreamByType(src.id, nodeType, visited);
+                    results.push(...deeper);
+                }
+                return results;
+            };
+
+            /**
+             * Get merged upstream context for a node.
+             * Returns { promptNode, imageNode } using priority:
+             *   1. Directly connected Prompt Node to this node
+             *   2. Prompt Node connected through Image Node
+             *   3. Directly connected Image Node
+             */
+            const getUpstreamContext = (targetId) => {
+                const incomingEdges = edgesRef.current.filter(e => String(e.target) === String(targetId));
+                let promptNode = null;
+                let imageNode = null;
+
+                for (const edge of incomingEdges) {
+                    const src = nodesRef.current.find(n => String(n.id) === String(edge.source));
+                    if (!src) continue;
+
+                    if (src.type === 'prompt' && !promptNode) {
+                        promptNode = src;
+                    }
+                    if (src.type === 'image' && !imageNode) {
+                        imageNode = src;
+                        // Also look for prompt connected to this image node
+                        if (!promptNode) {
+                            const imageUpstream = edgesRef.current.filter(e2 => String(e2.target) === String(src.id));
+                            for (const e2 of imageUpstream) {
+                                const imgSrc = nodesRef.current.find(n => String(n.id) === String(e2.source));
+                                if (imgSrc && imgSrc.type === 'prompt') {
+                                    promptNode = imgSrc;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return { promptNode, imageNode };
+            };
+
+            // ============================================================
+            // SINGLE NODE EXECUTION — Full Upstream Merge
+            // ============================================================
+            const onRunSingleNode = useCallback(async (nid) => {
+                const node = nodesRef.current.find(n => n.id === nid);
+                if (!node) return;
+
+                // Set status → running
+                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '생성 중...' } } : n));
+
+                // ── Gather upstream context ──────────────────────────────
+                const { promptNode, imageNode } = getUpstreamContext(nid);
+
+                // ── Debug log: upstream summary ─────────────────────────
+                console.group(`=== [MotionPix] ${node.type.toUpperCase()} Node [${nid}] Execute ===`);
+                console.log('Node data:', node.data);
+                console.log('Upstream Prompt Node:', promptNode ? {
+                    id: promptNode.id,
+                    prompt: promptNode.data.prompt,
+                    negativePrompt: promptNode.data.negativePrompt,
+                    style: promptNode.data.style,
+                    ratio: promptNode.data.ratio
+                } : 'NONE (직접 프롬프트 연결 없음)');
+                console.log('Upstream Image Node:', imageNode ? {
+                    id: imageNode.id,
+                    imageUrl: imageNode.data.imageUrl,
+                    model: imageNode.data.model,
+                    res: imageNode.data.res,
+                    status: imageNode.data.status
+                } : 'NONE (이미지 노드 연결 없음)');
+
+                // ── Video Node: check missing fields ─────────────────────
+                if (node.type === 'video') {
+                    const missing = [];
+                    if (!promptNode && !node.data.prompt) missing.push('prompt (Prompt Node 연결 없음)');
+                    if (imageNode && !imageNode.data.imageUrl && !imageNode.data.inputImage) {
+                        missing.push('imageUrl (Image Node가 아직 실행되지 않음 — Image Node를 먼저 실행하세요)');
+                    }
+                    if (missing.length > 0) {
+                        console.warn('[Video Node] 누락된 upstream 값:', missing);
+                    }
+                    // Log execution mode
+                    const hasImage = imageNode && (imageNode.data.imageUrl || imageNode.data.inputImage);
+                    const hasPrompt = promptNode || node.data.prompt;
+                    if (hasImage && hasPrompt) console.log('▶ 실행 모드: Image-to-Video (prompt + image)');
+                    else if (hasImage) console.log('▶ 실행 모드: Image-to-Video (image only)');
+                    else console.log('▶ 실행 모드: Text-to-Video (prompt only)');
+                }
+                console.groupEnd();
+
+                // ── Build merged payload ──────────────────────────────────
+                const effectivePrompt = (promptNode?.data?.prompt) || node.data.prompt || 'Cinematic motion';
+                const effectiveNegPrompt = (promptNode?.data?.negativePrompt) || node.data.negativePrompt || '';
+                const effectiveStyle = (promptNode?.data?.style) || node.data.style || 'Cinematic';
+                const effectiveRatio = (promptNode?.data?.ratio) || node.data.ratio || '16:9';
+
+                // Image: prefer imageNode.data.imageUrl (generated), fallback to inputImage (uploaded)
+                const effectiveImageUrl = imageNode
+                    ? (imageNode.data.imageUrl || imageNode.data.inputImage || null)
+                    : null;
+
+                const finalPayload = {
+                    node: {
+                        id: node.id,
+                        type: node.type,
+                        prompt: effectivePrompt,
+                        negativePrompt: effectiveNegPrompt,
+                        style: effectiveStyle,
+                        ratio: effectiveRatio,
+                        model: node.data.model,
+                        res: node.data.res || (node.type === 'video' ? 'std' : '1k'),
+                        dur: node.data.dur || '5',
+                        sound: node.data.sound || 'off',
+                        inputImage: node.data.inputImage || null,
+                        imageUrl: effectiveImageUrl || node.data.imageUrl || null,
+                        videoUrl: node.data.videoUrl || null
+                    },
+                    parent_prompt: promptNode ? {
+                        prompt: promptNode.data.prompt,
+                        negativePrompt: promptNode.data.negativePrompt,
+                        style: promptNode.data.style,
+                        ratio: promptNode.data.ratio
+                    } : null,
+                    parent_image: imageNode ? {
+                        imageUrl: imageNode.data.imageUrl || null,
+                        inputImage: imageNode.data.inputImage || null,
+                        resolution: imageNode.data.res || '1k',
+                        model: imageNode.data.model || null
+                    } : null
+                };
+
+                console.log('[MotionPix] Final merged payload →', JSON.stringify(finalPayload, null, 2));
+                showToast(`🚀 ${node.type.toUpperCase()} 노드 실행 시작...`);
+
+                try {
+                    const res = await fetch('/api/workflow/node-execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalPayload)
+                    });
+                    if (!res.ok) {
+                        const errBody = await res.json().catch(() => ({}));
+                        throw new Error(errBody.detail || errBody.error || `HTTP ${res.status}`);
+                    }
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        const result = data.result || {};
+                        setNodes((nds) => nds.map(n => {
+                            if (n.id === nid) {
+                                return {
+                                    ...n,
+                                    data: {
+                                        ...n.data,
+                                        status: '완료',
+                                        imageUrl: result.imageUrl || n.data.imageUrl,
+                                        videoUrl: result.videoUrl || n.data.videoUrl
+                                    }
+                                };
+                            }
+                            return n;
+                        }));
+                        console.log(`[MotionPix] ✅ ${node.type.toUpperCase()} 생성 완료:`, result);
+                        showToast(`✅ ${node.type.toUpperCase()} 생성 완료!`);
+                    } else {
+                        const errMsg = data.error || 'API Execution Failed';
+                        console.error(`[MotionPix] ❌ ${node.type.toUpperCase()} 실패:`, errMsg);
+                        throw new Error(errMsg);
+                    }
+                } catch (err) {
+                    setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '실패' } } : n));
+                    console.error('[MotionPix] 실행 오류:', err);
+                    showToast('❌ 생성 오류: ' + err.message);
+                }
+            }, [nodes, edges]);
+
+            // Add new nodes
+            const addNode = (type) => {
+                const id = `n_${Date.now()}`;
+                const newNode = {
+                    id,
+                    type,
+                    position: { x: 100 + nodes.length * 40, y: 150 + nodes.length * 20 },
+                    data: {
+                        prompt: '',
+                        negativePrompt: '',
+                        style: 'Cinematic',
+                        ratio: '16:9',
+                        model: type === 'image' ? 'gemini-3.1-flash-image-preview' : 'kling-v3.0',
+                        res: '1k',
+                        dur: '5',
+                        status: '대기',
+                        onChange: onNodeDataChange,
+                        onRun: onRunSingleNode,
+                        onPreview: handlePreview
+                    }
+                };
+                setNodes((nds) => nds.concat(newNode));
+                showToast(`✅ 신규 ${type.toUpperCase()} 노드 추가`);
+            };
+
+            const loadTemplate = () => {
+                const id1 = 'prompt_1';
+                const id2 = 'image_1';
+                const id3 = 'video_1';
+
+                const initialNodes = [
+                    {
+                        id: id1,
+                        type: 'prompt',
+                        position: { x: 50, y: 120 },
+                        data: {
+                            prompt: '미래 도시 야경 속의 사이버펑크 스타일 레이싱 카',
+                            negativePrompt: 'blurry, low quality',
+                            style: 'Cyberpunk',
+                            ratio: '16:9',
+                            status: '대기',
+                            onChange: onNodeDataChange,
+                            onRun: onRunSingleNode,
+                            onPreview: handlePreview
+                        }
+                    },
+                    {
+                        id: id2,
+                        type: 'image',
+                        position: { x: 450, y: 120 },
+                        data: {
+                            model: 'gemini-3.1-flash-image-preview',
+                            res: '1k',
+                            status: '대기',
+                            onChange: onNodeDataChange,
+                            onRun: onRunSingleNode,
+                            onPreview: handlePreview
+                        }
+                    },
+                    {
+                        id: id3,
+                        type: 'video',
+                        position: { x: 850, y: 120 },
+                        data: {
+                            model: 'kling-v3.0',
+                            dur: '5',
+                            status: '대기',
+                            onChange: onNodeDataChange,
+                            onRun: onRunSingleNode,
+                            onPreview: handlePreview
+                        }
+                    }
+                ];
+
+                const initialEdges = [
+                    { id: 'e1', source: id1, target: id2, style: { stroke: '#0ea5e9', strokeWidth: 3 } },
+                    { id: 'e2', source: id2, target: id3, style: { stroke: '#0ea5e9', strokeWidth: 3 } }
+                ];
+
+                setNodes(initialNodes);
+                setEdges(initialEdges);
+                showToast('🎬 3단계 워크플로우 템플릿 로드 완료');
+            };
+
+            // Run Entire Pipeline
+            const runPipeline = async () => {
+                if (!nodes.length) return;
+                showToast('🚀 전체 파이프라인 순차 실행 시작...');
+
+                // 순차적 순회 실행
+                const promptNode = nodes.find(n => n.type === 'prompt');
+                const imageNode = nodes.find(n => n.type === 'image');
+                const videoNode = nodes.find(n => n.type === 'video');
+
+                if (imageNode) {
+                    await onRunSingleNode(imageNode.id);
+                }
+                // Wait slightly for video trigger state propagation
+                setTimeout(async () => {
+                    if (videoNode) {
+                        await onRunSingleNode(videoNode.id);
+                    }
+                }, 1500);
+            };
+
+            useEffect(() => {
+                loadTemplate();
+            }, []);
+
+            return (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="top-bar">
+                        <div className="top-bar-left">
+                            <button className="top-bar-back" onClick={() => history.back()}>← 스튜디오</button>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                                <span>MotionPix</span> React Flow 기반 노드 캔버스
+                            </div>
+                        </div>
+                        <div className="rule-badge">
+                            💡 노드/연결선 클릭 후 Delete / Backspace 키로 즉시 삭제 가능
+                        </div>
+                    </div>
+
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onReconnect={onReconnect}
+                            onReconnectStart={onReconnectStart}
+                            onReconnectEnd={onReconnectEnd}
+                            nodeTypes={nodeTypes}
+                            deleteKeyCode={['Backspace', 'Delete']}
+                            fitView
+                        >
+                            <Controls />
+                        </ReactFlow>
+
+                        {/* Toolbar */}
+                        <div className="left-bar">
+                            <button className="tool-btn" onClick={() => addNode('prompt')} title="Prompt 추가">Prompt</button>
+                            <button className="tool-btn" onClick={() => addNode('image')} title="Image 추가">Image</button>
+                            <button className="tool-btn" onClick={() => addNode('video')} title="Video 추가">Video</button>
+                            <div className="tool-sep"></div>
+                            <button className="tool-btn" onClick={loadTemplate}>템플릿</button>
+                            <button className="tool-btn" onClick={() => { setNodes([]); setEdges([]); }}>비우기</button>
+                        </div>
+
+                        {/* Top Right run pipeline */}
+                        <button
+                            className="run-btn"
+                            style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
+                            onClick={runPipeline}
+                        >
+                            ▶ 전체 파이프라인 순차 실행
+                        </button>
+                    </div>
+
+                    {/* Image Lightbox Modal */}
+                    {modalImage && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.88)', backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setModalImage(null)}>
+                            <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                                <img src={modalImage} alt="Enlarged Preview" style={{ maxWidth: '100%', maxHeight: '78vh', borderRadius: '12px', boxShadow: '0 20px 50px rgba(0,0,0,0.9)', objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+                                    <a href={`/api/download/proxy?url=${encodeURIComponent(modalImage)}&filename=motionpix-large-${Date.now()}.jpg`} style={{ background: '#10b981', color: '#fff', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        💾 고화질 다운로드
+                                    </a>
+                                    <button onClick={() => setModalImage(null)} style={{ background: '#3f3f46', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>
+                                        닫기 ✕
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+
+    <div id="toast-root" style="
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #1f2029;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #f0f0f5;
+        padding: 10px 22px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 9999;
+        pointer-events: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    "></div>
+</body>
+
+</html>
+
+<div id="toast-root" style="
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #1f2029;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #f0f0f5;
+        padding: 10px 22px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 9999;
+        pointer-events: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    "></div>
+</body>
+
+</html>
