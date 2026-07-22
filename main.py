@@ -665,10 +665,12 @@ def nanobanana_generate(req: NanobananaRequest):
                             m_type = part["inlineData"].get("mimeType", "image/jpeg")
                             b64_data = part["inlineData"].get("data", "")
                             out_image = f"data:{m_type};base64,{b64_data}"
+            else:
+                print(f"Gemini API HTTP Error {response.status_code}: {response.text}")
         except Exception as e:
             print(f"Gemini API error: {e}")
 
-    # Ultra Photorealistic Realism AI Image Pipeline
+    # Fallback Image Generator Pipeline
     if not out_image:
         import urllib.parse, random
         if ratio == "9:16":
@@ -681,17 +683,10 @@ def nanobanana_generate(req: NanobananaRequest):
             w, h = (1280, 720) if res_mode == "1k" else (3840, 2160) if res_mode == "4k" else (2048, 1152)
 
         prompt_text = req.prompt.strip()
-        
-        # Image Editing mode if req.image is provided
-        if req.image and req.image.strip():
-            enhanced_prompt = f"modified photo of reference image: {prompt_text}, ultra detailed, highly refined, professional photo edit, 8k resolution, masterwork"
-        else:
-            enhanced_prompt = f"award winning masterwork photograph of {prompt_text}, 8k resolution, ultra detailed, sharp focus, cinematic photography, masterpiece, 35mm lens, natural lighting, unsplash stock photo"
-            
-        encoded_prompt = urllib.parse.quote(enhanced_prompt)
+        encoded_prompt = urllib.parse.quote(prompt_text)
         seed = random.randint(100, 999999)
         out_image = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={seed}&model=flux"
-        out_text = f"Generated/Edited photo for: {req.prompt}"
+        out_text = f"Generated photo for: {req.prompt}"
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
     if out_image and out_image.startswith("data:"):
