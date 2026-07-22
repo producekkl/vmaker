@@ -316,10 +316,13 @@ def health_check():
 
 @app.post("/api/kling/create")
 def create_video(req: CreateVideoRequest):
-    if not KLING_API_KEY:
+    kling_key = os.getenv("KLING_API_KEY", "")
+    kling_base = os.getenv("KLING_API_BASE", "https://api-singapore.klingai.com").rstrip("/")
+
+    if not kling_key:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"error": "API Key is not configured in .env file."}
+            detail={"error": "KLING_API_KEY is not configured in environment variables."}
         )
 
     duration = req.duration if req.duration in (5, 10) else 5
@@ -345,20 +348,18 @@ def create_video(req: CreateVideoRequest):
     if model_to_use == "kling-v1":
         if req.mode in ("std", "pro"):
             payload["mode"] = req.mode
-    else:
-        payload.pop("mode", None)
-    
+
     # If image (URL or Base64 string) is provided, append it and use image2video route
     is_image = bool(req.image and req.image.strip())
     if is_image:
         payload["image"] = ensure_public_url(req.image.strip(), "input_image.jpg")
-        target_url = f"{KLING_API_BASE}/v1/videos/image2video"
+        target_url = f"{kling_base}/v1/videos/image2video"
     else:
-        target_url = f"{KLING_API_BASE}/v1/videos/text2video"
+        target_url = f"{kling_base}/v1/videos/text2video"
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {KLING_API_KEY}"
+        "Authorization": f"Bearer {kling_key}"
     }
 
     try:
