@@ -327,7 +327,7 @@ def create_video(req: CreateVideoRequest):
     sound = "on" if str(req.sound).lower() in ("on", "true", "1") else "off"
 
     model_to_use = "kling-v1"
-    m_lower = (req.model_name or "").lower()
+    m_lower = (req.model_name or os.getenv("KLING_MODEL", "")).lower()
     if "1.6" in m_lower or "2.6" in m_lower or "i2v" in m_lower:
         model_to_use = "kling-v1-6"
     elif "1.5" in m_lower or "2.5" in m_lower or "turbo" in m_lower:
