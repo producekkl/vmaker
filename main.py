@@ -1554,10 +1554,21 @@ def serve_login():
 @app.get("/api/supabase/config")
 def get_supabase_keys():
     supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "") or os.getenv("SUPABASE_URL", "")
-    supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "") or os.getenv("SUPABASE_ANON_KEY", "")
+    
+    # Priority: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY > SUPABASE_ANON_KEY (if valid anon key)
+    pub_key = os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "")
+    anon_key = os.getenv("SUPABASE_ANON_KEY", "")
+
+    # Safety check: ensure key is NOT a secret/service_role key
+    selected_key = ""
+    for candidate in (pub_key, anon_key):
+        if candidate and not candidate.startswith("sb_sk_") and "service_role" not in candidate:
+            selected_key = candidate
+            break
+
     return {
         "supabase_url": supabase_url,
-        "supabase_key": supabase_key
+        "supabase_key": selected_key
     }
 
 class RegisterProfileRequest(BaseModel):
