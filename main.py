@@ -1550,11 +1550,11 @@ def serve_login():
         return FileResponse(login_path)
     return {"message": "Please create static/login.html file."}
 
-# Supabase Webhook API for configuration keys
+# Supabase Webhook API for configuration keys (Frontend publishable/anon key only)
 @app.get("/api/supabase/config")
 def get_supabase_keys():
-    supabase_url = os.getenv("SUPABASE_URL", "")
-    supabase_key = os.getenv("SUPABASE_ANON_KEY", "") or os.getenv("SUPABASE_SECRET_KEY", "")
+    supabase_url = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "") or os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "") or os.getenv("SUPABASE_ANON_KEY", "")
     return {
         "supabase_url": supabase_url,
         "supabase_key": supabase_key
