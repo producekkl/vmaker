@@ -617,110 +617,68 @@ def nanobanana_generate(req: NanobananaRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="NANOBANANA_API_KEY가 설정되지 않았습니다. Vercel 환경 변수에 구글 API 키를 등록해주세요."
         )
-        parts = []
-        if req.image and req.image.strip():
-            img_str = req.image.strip()
-            mime_type = "image/jpeg"
-            if img_str.startswith("data:"):
-                try:
-                    header, data = img_str.split(";base64,")
-                    mime_type = header.replace("data:", "")
-                    img_str = data
-                except Exception:
-                    pass
-            parts.append({
-                "inlineData": {
-                    "mimeType": mime_type,
-                    "data": img_str
-                }
-            })
-        parts.append({"text": req.prompt})
-        
-        payload = {
-            "contents": [{"parts": parts}]
-        }
-        
-        # Select official model
-        headers = {"Content-Type": "application/json"}
-        
-        # Method 1: Google Imagen 3 predict endpoint
-        url_imagen = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={nanobanana_key}"
-        imagen_payload = {
-            "instances": [{"prompt": req.prompt}],
-            "parameters": {
-                "sampleCount": 1,
-                "aspectRatio": ratio
-            }
-        }
-        
-        try:
-            print(f"[Nanobanana API] Trying Google Imagen 3 API with key length {len(nanobanana_key)}...")
-            res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=20)
-            print(f"[Nanobanana API] HTTP Status: {res1.status_code}")
-            if res1.status_code == 200:
-                res_json = res1.json()
-                predictions = res_json.get("predictions", [])
-                if predictions and len(predictions) > 0:
-                    b64_data = predictions[0].get("bytesBase64Encoded", "")
-                    m_type = predictions[0].get("mimeType", "image/jpeg")
-                    if b64_data:
-                        out_image = f"data:{m_type};base64,{b64_data}"
-                        print("[Nanobanana API] ✅ Successfully generated image with Imagen 3!")
-            else:
-                err_msg = res1.text[:300]
-                print(f"[Nanobanana API] ❌ Imagen 3 Error {res1.status_code}: {err_msg}")
-                raise HTTPException(
-                    status_code=res1.status_code,
-                    detail=f"Google Imagen API 오류 ({res1.status_code}): {err_msg}"
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"[Nanobanana API] Imagen 3 exception: {e}")
-            raise HTTPException(status_code=500, detail=f"Google Imagen API 연결 실패: {str(e)}")
 
-        # Method 2: Fallback to Gemini Multimodal Image endpoint (generateContent)
-        if not out_image:
-            url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={nanobanana_key}"
-            gemini_payload = {
-                "contents": [{"parts": parts}],
-                "generationConfig": {"responseMimeType": "image/jpeg"}
-            }
+    parts = []
+    if req.image and req.image.strip():
+        img_str = req.image.strip()
+        mime_type = "image/jpeg"
+        if img_str.startswith("data:"):
             try:
-                print(f"[Nanobanana API] Trying Gemini generateContent API...")
-                res2 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=15)
-                if res2.status_code == 200:
-                    res_json = res2.json()
-                    candidates = res_json.get("candidates", [])
-                    if candidates:
-                        parts_ret = candidates[0].get("content", {}).get("parts", [])
-                        for part in parts_ret:
-                            if "inlineData" in part:
-                                b64_data = part["inlineData"].get("data", "")
-                                m_type = part["inlineData"].get("mimeType", "image/jpeg")
-                                if b64_data:
-                                    out_image = f"data:{m_type};base64,{b64_data}"
-                                    print("[Nanobanana API] ✅ Successfully generated image with Gemini!")
-            except Exception as ex2:
-                print(f"[Nanobanana API] Gemini exception: {ex2}")
-
-    # Fallback Image Generator Pipeline
-    if not out_image:
-        import urllib.parse, random
-        if ratio == "9:16":
-            w, h = (720, 1280) if res_mode == "1k" else (2160, 3840) if res_mode == "4k" else (1152, 2048)
-        elif ratio == "1:1":
-            w, h = (1024, 1024) if res_mode == "1k" else (3072, 3072) if res_mode == "4k" else (1536, 1536)
-        elif ratio == "4:3":
-            w, h = (1024, 768) if res_mode == "1k" else (2880, 2160) if res_mode == "4k" else (1600, 1200)
-        else: # 16:9 default
-            w, h = (1280, 720) if res_mode == "1k" else (3840, 2160) if res_mode == "4k" else (2048, 1152)
-
-        prompt_text = req.prompt.strip()
-        encoded_prompt = urllib.parse.quote(prompt_text)
-        seed = random.randint(100, 999999)
-        out_image = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={seed}&model=flux"
-        out_text = f"Generated photo for: {req.prompt}"
+                header, data = img_str.split(";base64,")
+                mime_type = header.replace("data:", "")
+                img_str = data
+            except Exception:
+                pass
+        parts.append({
+            "inlineData": {
+                "mimeType": mime_type,
+                "data": img_str
+            }
+        })
+    parts.append({"text": req.prompt})
+        
+    payload = {
+        "contents": [{"parts": parts}]
+    }
+    
+    # Select official model
+    headers = {"Content-Type": "application/json"}
+    
+    # Method 1: Google Imagen 3 predict endpoint
+    url_imagen = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={nanobanana_key}"
+    imagen_payload = {
+        "instances": [{"prompt": req.prompt}],
+        "parameters": {
+            "sampleCount": 1,
+            "aspectRatio": ratio
+        }
+    }
+    
+    try:
+        print(f"[Nanobanana API] Trying Google Imagen 3 API with key length {len(nanobanana_key)}...")
+        res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=20)
+        print(f"[Nanobanana API] HTTP Status: {res1.status_code}")
+        if res1.status_code == 200:
+            res_json = res1.json()
+            predictions = res_json.get("predictions", [])
+            if predictions and len(predictions) > 0:
+                b64_data = predictions[0].get("bytesBase64Encoded", "")
+                m_type = predictions[0].get("mimeType", "image/jpeg")
+                if b64_data:
+                    out_image = f"data:{m_type};base64,{b64_data}"
+                    print("[Nanobanana API] ✅ Successfully generated image with Imagen 3!")
+        else:
+            err_msg = res1.text[:300]
+            print(f"[Nanobanana API] ❌ Imagen 3 Error {res1.status_code}: {err_msg}")
+            raise HTTPException(
+                status_code=res1.status_code,
+                detail=f"Google Imagen API 오류 ({res1.status_code}): {err_msg}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Nanobanana API] Imagen 3 exception: {e}")
+        raise HTTPException(status_code=500, detail=f"Google Imagen API 연결 실패: {str(e)}")
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
     if out_image and out_image.startswith("data:"):
@@ -740,7 +698,7 @@ def nanobanana_generate(req: NanobananaRequest):
     return {
         "image": out_image,
         "image_url": out_image,
-        "text": out_text,
+        "text": f"Generated photo for: {req.prompt}",
         "finish_reason": finish_reason
     }
 
