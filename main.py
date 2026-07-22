@@ -643,27 +643,35 @@ def nanobanana_generate(req: NanobananaRequest):
     
     headers = {"Content-Type": "application/json"}
     
-    # Method 1: Try official Google Imagen 3 generateImages API
-    url_imagen = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key={nanobanana_key}"
-    imagen_payload = {
-        "prompt": req.prompt,
-        "number_of_images": 1,
-        "aspect_ratio": ratio,
-        "output_mime_type": "image/jpeg"
+    # Nano Banana / Gemini Official Image Generation API
+    target_model = "gemini-2.5-flash-image"
+    m_name = (req.model_name or req.model or "").lower()
+    if "3.1" in m_name or "3.0" in m_name or "pro" in m_name:
+        target_model = "gemini-3.1-flash-image-preview"
+
+    url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
+    gemini_payload = {
+        "contents": [{"parts": parts}]
     }
     
     try:
-        res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=12)
+        res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=25)
         if res1.status_code == 200:
             res_json = res1.json()
-            images = res_json.get("generatedImages", [])
-            if images and len(images) > 0:
-                b64_data = images[0].get("image", {}).get("imageBytes", "")
-                if b64_data:
-                    out_image = f"data:image/jpeg;base64,{b64_data}"
-                    print("[Nanobanana API] ✅ Successfully generated image with Google Imagen 3!")
+            candidates = res_json.get("candidates", [])
+            if candidates and len(candidates) > 0:
+                parts_ret = candidates[0].get("content", {}).get("parts", [])
+                for part in parts_ret:
+                    if "inlineData" in part:
+                        b64_data = part["inlineData"].get("data", "")
+                        m_type = part["inlineData"].get("mimeType", "image/jpeg")
+                        if b64_data:
+                            out_image = f"data:{m_type};base64,{b64_data}"
+                            print(f"[Nanobanana API] ✅ Successfully generated high-quality image with {target_model}!")
+        else:
+            print(f"[Nanobanana API] ❌ API HTTP Error {res1.status_code}: {res1.text[:250]}")
     except Exception as e:
-        print(f"[Nanobanana API] Imagen 3 exception: {e}")
+        print(f"[Nanobanana API] Exception: {e}")
 
     # Method 2: Fast & Accurate HD AI Image Engine (100% prompt accuracy with translation)
     if not out_image:
