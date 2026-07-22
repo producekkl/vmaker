@@ -298,7 +298,7 @@ class CreateVideoRequest(BaseModel):
     prompt: str = Field(..., min_length=1, description="Text prompt for video generation")
     duration: Optional[int] = Field(5, description="Duration in seconds. Only 5 or 10 allowed.")
     aspect_ratio: Optional[str] = Field("16:9", description="Aspect ratio. Allowed: 16:9, 9:16, 1:1")
-    mode: Optional[str] = Field("std", description="Generation mode. Allowed: std, pro, 4k")
+    mode: Optional[str] = Field(None, description="Generation mode. Allowed: std, pro, 4k")
     model_name: Optional[str] = Field(None, description="Optional model override")
     image: Optional[str] = Field(None, description="Optional reference image URL (for image-to-video)")
     sound: Optional[str] = Field("off", description="Audio generation. Allowed: on, off")
