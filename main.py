@@ -611,8 +611,10 @@ def nanobanana_generate(req: NanobananaRequest):
     ratio = str(req.aspect_ratio or "16:9").strip()
     res_mode = str(req.mode or "2k").lower().strip()
     
+    nanobanana_key = os.getenv("NANOBANANA_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
+    
     # Try Official Google Gemini Image API (gemini-3.1-flash-image / gemini-3-pro-image)
-    if NANOBANANA_API_KEY:
+    if nanobanana_key:
         parts = []
         if req.image and req.image.strip():
             img_str = req.image.strip()
@@ -646,7 +648,7 @@ def nanobanana_generate(req: NanobananaRequest):
         elif "3.1" in m_name or "flash" in m_name:
             target_model = "gemini-3.1-flash-image-preview"
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={NANOBANANA_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
         headers = {"Content-Type": "application/json"}
         
         try:
