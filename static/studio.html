@@ -1016,6 +1016,7 @@ async function generateImage(prompt) {
 
         if (!imgSrc) throw new Error(data.detail || '이미지 데이터가 없습니다');
 
+        imgEl.onerror = () => { console.error('Image load failed:', imgSrc); showToast('⚠️ 이미지 로딩 중 오류가 발생했습니다. 새 탭으로 열기를 클릭해보세요.'); };
         imgEl.src = imgSrc;
         document.getElementById('preview-loader').style.display = 'none';
         document.getElementById('preview-placeholder').style.display = 'none';
