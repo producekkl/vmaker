@@ -657,7 +657,9 @@ def nanobanana_generate(req: NanobananaRequest):
         headers = {"Content-Type": "application/json"}
         
         try:
+            print(f"[Nanobanana API] Calling Google Imagen API with model={target_model}, prompt='{req.prompt[:30]}...'")
             response = requests.post(url, json=imagen_payload, headers=headers, timeout=25)
+            print(f"[Nanobanana API] Status: {response.status_code}")
             if response.status_code == 200:
                 res_json = response.json()
                 predictions = res_json.get("predictions", [])
@@ -666,10 +668,11 @@ def nanobanana_generate(req: NanobananaRequest):
                     m_type = predictions[0].get("mimeType", "image/jpeg")
                     if b64_data:
                         out_image = f"data:{m_type};base64,{b64_data}"
+                        print("[Nanobanana API] ✅ Successfully received base64 image from Google Imagen API!")
             else:
-                print(f"Google Imagen API HTTP Error {response.status_code}: {response.text[:200]}")
+                print(f"[Nanobanana API] ❌ HTTP {response.status_code}: {response.text[:300]}")
         except Exception as e:
-            print(f"Google Imagen API error: {e}")
+            print(f"[Nanobanana API] ❌ Exception: {e}")
 
     # Fallback Image Generator Pipeline
     if not out_image:
