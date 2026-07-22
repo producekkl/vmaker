@@ -77,47 +77,22 @@ def ensure_public_url(data_or_url: str, default_filename: str) -> str:
     if not file_bytes:
         return data_or_url
 
-    detected_ext = detect_extension(file_bytes)
-    if detected_ext:
-        filename = f"input_file.{detected_ext}"
+    detected_ext = detect_extension(file_bytes) or "jpg"
+    filename = default_filename or f"input_file.{detected_ext}"
 
-    # Try Supabase storage first if configured
+    # Upload exclusively to Supabase Storage ('vmaker_storage')
     supabase_url, supabase_key, bucket = get_supabase_config()
     if supabase_url and supabase_key:
         try:
             storage_path = f"inputs/{uuid.uuid4().hex[:12]}_{filename}"
-            mime_type = "image/jpeg" if filename.endswith(".jpg") else "image/png"
+            mime_type = f"image/{detected_ext}" if detected_ext in ("jpg", "jpeg", "png", "webp") else "application/octet-stream"
             pub_url = upload_to_supabase_storage(file_bytes, storage_path, mime_type)
             if pub_url:
-                print(f"Uploaded input image to Supabase Storage: {pub_url}")
+                print(f"[Supabase Storage] ✅ Uploaded file to: {pub_url}")
                 return pub_url
         except Exception as sup_err:
-            print(f"Supabase upload error: {sup_err}")
+            print(f"[Supabase Storage] Upload error: {sup_err}")
 
-    # Fallback upload to tmpfiles.org
-    try:
-        files = {'file': (filename, io.BytesIO(file_bytes))}
-        res = requests.post("https://tmpfiles.org/api/v1/upload", files=files, timeout=20)
-        if res.status_code == 200:
-            res_data = res.json()
-            if res_data.get("status") == "success":
-                url = res_data.get("data", {}).get("url")
-                if url:
-                    try:
-                        landing_res = requests.get(url, timeout=10)
-                        if landing_res.status_code == 200:
-                            import re
-                            match = re.search(r'href="(https://tmpfiles\.org/dl/[^"]+)"', landing_res.text)
-                            if match:
-                                return match.group(1)
-                    except Exception as scrape_err:
-                        print(f"Error scraping tmpfiles direct link: {scrape_err}")
-                    
-                    download_url = url.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/")
-                    return download_url
-    except Exception as e:
-        print(f"Error uploading to tmpfiles.org: {e}")
-    
     return data_or_url
 
 
@@ -655,7 +630,7 @@ def nanobanana_generate(req: NanobananaRequest):
     }
     
     try:
-        res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=25)
+        res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=30)
         if res1.status_code == 200:
             res_json = res1.json()
             candidates = res_json.get("candidates", [])
@@ -668,38 +643,21 @@ def nanobanana_generate(req: NanobananaRequest):
                         if b64_data:
                             out_image = f"data:{m_type};base64,{b64_data}"
                             print(f"[Nanobanana API] ✅ Successfully generated high-quality image with {target_model}!")
-        else:
-            print(f"[Nanobanana API] ❌ API HTTP Error {res1.status_code}: {res1.text[:250]}")
+        if not out_image:
+            err_msg = res1.text[:300] if res1 else "Google Gemini API에서 이미지를 반환하지 않았습니다."
+            print(f"[Nanobanana API] ❌ API HTTP Error {res1.status_code if res1 else 500}: {err_msg}")
+            raise HTTPException(
+                status_code=res1.status_code if res1 and res1.status_code != 200 else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Google Gemini/Nano Banana API 오류 ({res1.status_code if res1 else 500}): {err_msg}"
+            )
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[Nanobanana API] Exception: {e}")
-
-    # Method 2: Fast & Accurate HD AI Image Engine (100% prompt accuracy with translation)
-    if not out_image:
-        import urllib.parse, random
-        if ratio == "9:16":
-            w, h = (720, 1280) if res_mode == "1k" else (2160, 3840) if res_mode == "4k" else (1152, 2048)
-        elif ratio == "1:1":
-            w, h = (1024, 1024) if res_mode == "1k" else (3072, 3072) if res_mode == "4k" else (1536, 1536)
-        elif ratio == "4:3":
-            w, h = (1024, 768) if res_mode == "1k" else (2880, 2160) if res_mode == "4k" else (1600, 1200)
-        else: # 16:9 default
-            w, h = (1280, 720) if res_mode == "1k" else (3840, 2160) if res_mode == "4k" else (2048, 1152)
-
-        raw_prompt = req.prompt.strip()
-        # Translate Korean prompts using MyMemory Translation API for 100% accurate AI understanding
-        translated_prompt = raw_prompt
-        try:
-            tr_res = requests.get(f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(raw_prompt)}&langpair=ko|en", timeout=4)
-            if tr_res.status_code == 200:
-                tr_data = tr_res.json()
-                translated_prompt = tr_data.get("responseData", {}).get("translatedText", raw_prompt)
-        except Exception:
-            pass
-
-        encoded_prompt = urllib.parse.quote(translated_prompt)
-        seed = random.randint(100, 999999)
-        out_image = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={seed}&model=flux"
-        out_text = f"Generated photo for: {req.prompt}"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google Gemini/Nano Banana API 연결 실패: {str(e)}"
+        )
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
     if out_image and out_image.startswith("data:"):
@@ -854,7 +812,7 @@ def generate_tts(req: TTSRequest):
         public_url = ensure_public_url(base64_audio, "speech_audio.mp3")
         
         if not public_url or public_url.startswith("data:"):
-            raise Exception("Failed to upload generated audio to tmpfiles.org")
+            raise Exception("Failed to upload generated audio to Supabase Storage")
             
         return {
             "text": req.text,
@@ -1417,29 +1375,22 @@ async def execute_single_node(req: SingleNodeExecReq):
             # Convert to full http://... URL or upload to tmpfiles if needed.
             # ─────────────────────────────────────────────────────────────
             if img_src and img_src.startswith("/static/"):
-                # Convert local static path to absolute server URL
                 local_file = img_src.lstrip("/")  # e.g. static/downloads/motionpix_xxx.jpg
                 if os.path.exists(local_file):
                     try:
                         with open(local_file, "rb") as f:
                             file_bytes = f.read()
-                        # Upload to tmpfiles.org for public access
-                        upload_res = requests.post(
-                            "https://tmpfiles.org/api/v1/upload",
-                            files={"file": ("image.jpg", file_bytes, "image/jpeg")},
-                            timeout=30
-                        )
-                        if upload_res.status_code == 200:
-                            tmpdata = upload_res.json()
-                            raw_url = tmpdata.get("data", {}).get("url", "")
-                            # tmpfiles URLs need /dl/ prefix for direct download
-                            public_url = raw_url.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/")
-                            print(f"[Video Node] Uploaded local image to public URL: {public_url}")
-                            img_src = public_url
+                        ext = "png" if local_file.endswith(".png") else "jpg"
+                        mime_type = f"image/{ext}"
+                        storage_path = f"workflow/{uuid.uuid4().hex[:12]}.{ext}"
+                        pub_url = upload_to_supabase_storage(file_bytes, storage_path, mime_type)
+                        if pub_url:
+                            print(f"[Video Node] Uploaded local image to Supabase Storage: {pub_url}")
+                            img_src = pub_url
                         else:
-                            print(f"[Video Node] ⚠️ tmpfiles upload failed: {upload_res.status_code} {upload_res.text[:200]}")
+                            print(f"[Video Node] ⚠️ Supabase Storage upload failed for local image")
                     except Exception as upload_ex:
-                        print(f"[Video Node] ⚠️ Failed to upload local image: {upload_ex}")
+                        print(f"[Video Node] ⚠️ Failed to upload local image to Supabase: {upload_ex}")
                 else:
                     print(f"[Video Node] ⚠️ Local file not found: {local_file}")
 
@@ -1729,15 +1680,21 @@ def save_generation(req: GenerationSaveRequest):
 
 
 @app.get("/api/generations")
-def get_generations(user_id: str):
+def get_generations(user_id: str, request: Request):
     supabase_url, supabase_key, _ = get_supabase_config()
     if not supabase_url or not supabase_key:
         return {"ok": True, "data": []}
 
+    # Extract user's Bearer token if present to pass RLS, fallback to service/anon key
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "").strip() if "Bearer " in auth_header else supabase_key
+    if not token or token == "null":
+        token = supabase_key
+
     db_url = f"{supabase_url}/rest/v1/generations"
     headers = {
-        "Authorization": f"Bearer {supabase_key}",
-        "apikey": supabase_key
+        "Authorization": f"Bearer {token}",
+        "apikey": os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "") or supabase_key
     }
     params = {
         "user_id": f"eq.{user_id}",
@@ -1751,6 +1708,12 @@ def get_generations(user_id: str):
             return {"ok": True, "data": res.json()}
         else:
             print(f"[Supabase DB] Generations fetch note {res.status_code}: {res.text[:200]}")
+            # Retry with secret/service key if RLS blocked anon client token
+            headers["Authorization"] = f"Bearer {supabase_key}"
+            headers["apikey"] = supabase_key
+            res2 = requests.get(db_url, headers=headers, params=params, timeout=15)
+            if res2.status_code == 200:
+                return {"ok": True, "data": res2.json()}
             return {"ok": True, "data": []}
     except Exception as e:
         print(f"[Supabase DB] Fetch Exception: {e}")

@@ -1027,13 +1027,10 @@ async function generateImage(prompt) {
         currentDownloadUrl = imgSrc;
         document.getElementById('action-bar').style.display = 'flex';
 
-        // Auto-set generated image as I2V reference for video mode
-        setImageRef(imgSrc);
-
         // Add to gallery & save to Supabase Storage/DB
         addToGallery('image', imgSrc, prompt, model);
         setUIState('success');
-        showToast('✅ 이미지 생성 완료! VIDEO 탭으로 전환하면 이 이미지 기반으로 영상을 만들 수 있습니다.');
+        showToast('✅ 이미지 생성 완료!');
     } catch (err) {
         document.getElementById('preview-loader').style.display = 'none';
         setUIState('failed');
@@ -1154,7 +1151,9 @@ async function loadGenerationsHistory() {
     if (!currentSession?.user?.id) return;
     try {
         const userId = currentSession.user.id;
-        const res = await fetch(`/api/generations?user_id=${encodeURIComponent(userId)}`);
+        const res = await fetch(`/api/generations?user_id=${encodeURIComponent(userId)}`, {
+            headers: getAuthHeaders()
+        });
         if (res.ok) {
             const result = await res.json();
             if (result.ok && Array.isArray(result.data)) {
