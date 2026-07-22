@@ -638,37 +638,38 @@ def nanobanana_generate(req: NanobananaRequest):
             "contents": [{"parts": parts}]
         }
         
-        # Select official Nano Banana model
-        target_model = "gemini-3.1-flash-image-preview"
+        # Select official Imagen / Gemini model
         m_name = (req.model_name or req.model or "").lower()
-        if "2.5" in m_name or "standard" in m_name:
-            target_model = "gemini-2.5-flash-image"
-        elif "pro" in m_name:
-            target_model = "gemini-3-pro-image-preview"
-        elif "3.1" in m_name or "flash" in m_name:
-            target_model = "gemini-3.1-flash-image-preview"
+        if "2.5" in m_name or "standard" in m_name or "3.1" in m_name or "flash" in m_name:
+            target_model = "imagen-3.0-generate-002"
+        else:
+            target_model = "imagen-3.0-generate-002"
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
+        # Call official Google Generative Language API
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:predict?key={nanobanana_key}"
+        imagen_payload = {
+            "instances": [{"prompt": req.prompt}],
+            "parameters": {
+                "sampleCount": 1,
+                "aspectRatio": ratio
+            }
+        }
         headers = {"Content-Type": "application/json"}
         
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=25)
+            response = requests.post(url, json=imagen_payload, headers=headers, timeout=25)
             if response.status_code == 200:
                 res_json = response.json()
-                if "candidates" in res_json and len(res_json["candidates"]) > 0:
-                    candidate = res_json["candidates"][0]
-                    parts_ret = candidate.get("content", {}).get("parts", [])
-                    for part in parts_ret:
-                        if "text" in part:
-                            out_text += part["text"]
-                        elif "inlineData" in part:
-                            m_type = part["inlineData"].get("mimeType", "image/jpeg")
-                            b64_data = part["inlineData"].get("data", "")
-                            out_image = f"data:{m_type};base64,{b64_data}"
+                predictions = res_json.get("predictions", [])
+                if predictions and len(predictions) > 0:
+                    b64_data = predictions[0].get("bytesBase64Encoded", "")
+                    m_type = predictions[0].get("mimeType", "image/jpeg")
+                    if b64_data:
+                        out_image = f"data:{m_type};base64,{b64_data}"
             else:
-                print(f"Gemini API HTTP Error {response.status_code}: {response.text}")
+                print(f"Google Imagen API HTTP Error {response.status_code}: {response.text[:200]}")
         except Exception as e:
-            print(f"Gemini API error: {e}")
+            print(f"Google Imagen API error: {e}")
 
     # Fallback Image Generator Pipeline
     if not out_image:
