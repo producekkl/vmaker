@@ -1044,26 +1044,51 @@ os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/api/assets")
-def get_assets(limit: int = 12):
+def get_assets(limit: int = 24):
     supabase_url, supabase_key, _ = get_supabase_config()
     if not supabase_url or not supabase_key:
         return []
-    db_url = f"{supabase_url}/rest/v1/generated_assets"
+    
     headers = {
         "Authorization": f"Bearer {supabase_key}",
         "apikey": supabase_key
     }
-    params = {
+
+    # 1. Fetch from 'generations' table (Public Showcase per user)
+    db_url_gen = f"{supabase_url}/rest/v1/generations"
+    params_gen = {
+        "select": "type,prompt,image_url,created_at",
+        "order": "created_at.desc",
+        "limit": str(limit)
+    }
+
+    try:
+        res = requests.get(db_url_gen, headers=headers, params=params_gen, timeout=10)
+        if res.status_code == 200:
+            rows = res.json()
+            if isinstance(rows, list) and len(rows) > 0:
+                return [{
+                    "type": r.get("type") or "image",
+                    "prompt": r.get("prompt") or "AI Generation",
+                    "source_url": r.get("image_url"),
+                    "created_at": r.get("created_at")
+                } for r in rows if r.get("image_url")]
+    except Exception as e:
+        print(f"Error fetching generations from Supabase: {e}")
+
+    # 2. Fallback to 'generated_assets' table if generations is empty
+    db_url_assets = f"{supabase_url}/rest/v1/generated_assets"
+    params_assets = {
         "select": "type,prompt,source_url,created_at",
         "order": "created_at.desc",
         "limit": str(limit)
     }
     try:
-        res = requests.get(db_url, headers=headers, params=params, timeout=10)
+        res = requests.get(db_url_assets, headers=headers, params=params_assets, timeout=10)
         if res.status_code == 200:
             return res.json()
     except Exception as e:
-        print(f"Error fetching assets from Supabase: {e}")
+        print(f"Error fetching generated_assets from Supabase: {e}")
     return []
 
 # =====================================================
