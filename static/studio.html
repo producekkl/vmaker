@@ -992,11 +992,11 @@ async function generateImage(prompt) {
 
     try {
         const body = { prompt, aspect_ratio: ratio, model_name: model, mode: resolution };
-        if (base64ImageRef) {
+        if (activeMode === 'modify' && base64ImageRef) {
             body.image = base64ImageRef;
             showToast('🎨 첨부 이미지 기반 수정 모드로 진행합니다...');
         } else {
-            showToast('🖼️ 이미지 생성 중...');
+            showToast('🖼️ 신규 이미지 생성 중...');
         }
 
         const res = await fetch('/api/gemini/image', {
