@@ -612,9 +612,11 @@ def nanobanana_generate(req: NanobananaRequest):
     res_mode = str(req.mode or "2k").lower().strip()
     
     nanobanana_key = os.getenv("NANOBANANA_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
-    
-    # Try Official Google Gemini Image API (gemini-3.1-flash-image / gemini-3-pro-image)
-    if nanobanana_key:
+    if not nanobanana_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="NANOBANANA_API_KEY가 설정되지 않았습니다. Vercel 환경 변수에 구글 API 키를 등록해주세요."
+        )
         parts = []
         if req.image and req.image.strip():
             img_str = req.image.strip()
@@ -652,8 +654,9 @@ def nanobanana_generate(req: NanobananaRequest):
         }
         
         try:
-            print(f"[Nanobanana API] Trying Google Imagen 3 API...")
-            res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=15)
+            print(f"[Nanobanana API] Trying Google Imagen 3 API with key length {len(nanobanana_key)}...")
+            res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=20)
+            print(f"[Nanobanana API] HTTP Status: {res1.status_code}")
             if res1.status_code == 200:
                 res_json = res1.json()
                 predictions = res_json.get("predictions", [])
@@ -664,9 +667,17 @@ def nanobanana_generate(req: NanobananaRequest):
                         out_image = f"data:{m_type};base64,{b64_data}"
                         print("[Nanobanana API] ✅ Successfully generated image with Imagen 3!")
             else:
-                print(f"[Nanobanana API] Imagen 3 response {res1.status_code}: {res1.text[:200]}")
+                err_msg = res1.text[:300]
+                print(f"[Nanobanana API] ❌ Imagen 3 Error {res1.status_code}: {err_msg}")
+                raise HTTPException(
+                    status_code=res1.status_code,
+                    detail=f"Google Imagen API 오류 ({res1.status_code}): {err_msg}"
+                )
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"[Nanobanana API] Imagen 3 exception: {e}")
+            raise HTTPException(status_code=500, detail=f"Google Imagen API 연결 실패: {str(e)}")
 
         # Method 2: Fallback to Gemini Multimodal Image endpoint (generateContent)
         if not out_image:
