@@ -638,15 +638,11 @@ def nanobanana_generate(req: NanobananaRequest):
             "contents": [{"parts": parts}]
         }
         
-        # Select official Imagen / Gemini model
-        m_name = (req.model_name or req.model or "").lower()
-        if "2.5" in m_name or "standard" in m_name or "3.1" in m_name or "flash" in m_name:
-            target_model = "imagen-3.0-generate-002"
-        else:
-            target_model = "imagen-3.0-generate-002"
-
-        # Call official Google Generative Language API
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:predict?key={nanobanana_key}"
+        # Select official model
+        headers = {"Content-Type": "application/json"}
+        
+        # Method 1: Google Imagen 3 predict endpoint
+        url_imagen = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={nanobanana_key}"
         imagen_payload = {
             "instances": [{"prompt": req.prompt}],
             "parameters": {
@@ -654,25 +650,48 @@ def nanobanana_generate(req: NanobananaRequest):
                 "aspectRatio": ratio
             }
         }
-        headers = {"Content-Type": "application/json"}
         
         try:
-            print(f"[Nanobanana API] Calling Google Imagen API with model={target_model}, prompt='{req.prompt[:30]}...'")
-            response = requests.post(url, json=imagen_payload, headers=headers, timeout=25)
-            print(f"[Nanobanana API] Status: {response.status_code}")
-            if response.status_code == 200:
-                res_json = response.json()
+            print(f"[Nanobanana API] Trying Google Imagen 3 API...")
+            res1 = requests.post(url_imagen, json=imagen_payload, headers=headers, timeout=15)
+            if res1.status_code == 200:
+                res_json = res1.json()
                 predictions = res_json.get("predictions", [])
                 if predictions and len(predictions) > 0:
                     b64_data = predictions[0].get("bytesBase64Encoded", "")
                     m_type = predictions[0].get("mimeType", "image/jpeg")
                     if b64_data:
                         out_image = f"data:{m_type};base64,{b64_data}"
-                        print("[Nanobanana API] ✅ Successfully received base64 image from Google Imagen API!")
+                        print("[Nanobanana API] ✅ Successfully generated image with Imagen 3!")
             else:
-                print(f"[Nanobanana API] ❌ HTTP {response.status_code}: {response.text[:300]}")
+                print(f"[Nanobanana API] Imagen 3 response {res1.status_code}: {res1.text[:200]}")
         except Exception as e:
-            print(f"[Nanobanana API] ❌ Exception: {e}")
+            print(f"[Nanobanana API] Imagen 3 exception: {e}")
+
+        # Method 2: Fallback to Gemini Multimodal Image endpoint (generateContent)
+        if not out_image:
+            url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={nanobanana_key}"
+            gemini_payload = {
+                "contents": [{"parts": parts}],
+                "generationConfig": {"responseMimeType": "image/jpeg"}
+            }
+            try:
+                print(f"[Nanobanana API] Trying Gemini generateContent API...")
+                res2 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=15)
+                if res2.status_code == 200:
+                    res_json = res2.json()
+                    candidates = res_json.get("candidates", [])
+                    if candidates:
+                        parts_ret = candidates[0].get("content", {}).get("parts", [])
+                        for part in parts_ret:
+                            if "inlineData" in part:
+                                b64_data = part["inlineData"].get("data", "")
+                                m_type = part["inlineData"].get("mimeType", "image/jpeg")
+                                if b64_data:
+                                    out_image = f"data:{m_type};base64,{b64_data}"
+                                    print("[Nanobanana API] ✅ Successfully generated image with Gemini!")
+            except Exception as ex2:
+                print(f"[Nanobanana API] Gemini exception: {ex2}")
 
     # Fallback Image Generator Pipeline
     if not out_image:
