@@ -239,8 +239,8 @@ app.add_middleware(
 )
 
 # Supabase JWT Authentication Middleware
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "") or os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "") or os.getenv("SUPABASE_ANON_KEY", "")
 
 async def verify_supabase_token(token: str) -> bool:
     """Verify Supabase JWT by calling the Supabase Auth API."""
