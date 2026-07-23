@@ -1270,6 +1270,37 @@ function handlePreviewDrop(e) {
     e.stopPropagation();
     document.getElementById('preview-box').classList.remove('drag-active');
     document.getElementById('preview-drop-hint').style.display = 'none';
+
+    // 1. Drop from History gallery URL
+    const droppedUrl = e.dataTransfer.getData('text/plain');
+    const jsonStr = e.dataTransfer.getData('application/json');
+    let itemData = null;
+    if (jsonStr) {
+        try { itemData = JSON.parse(jsonStr); } catch (ex) {}
+    }
+
+    if (droppedUrl) {
+        const isVideo = (itemData && itemData.type === 'video') || droppedUrl.includes('.mp4') || droppedUrl.includes('video');
+        if (isVideo) {
+            const vidEl = document.getElementById('preview-video');
+            vidEl.src = droppedUrl; vidEl.style.display = 'block';
+            document.getElementById('preview-img').style.display = 'none';
+        } else {
+            const imgEl = document.getElementById('preview-img');
+            imgEl.src = droppedUrl; imgEl.style.display = 'block';
+            document.getElementById('preview-video').style.display = 'none';
+            setImageRef(droppedUrl);
+        }
+        document.getElementById('preview-placeholder').style.display = 'none';
+        document.getElementById('preview-box').classList.add('has-content');
+        currentDownloadUrl = droppedUrl;
+        document.getElementById('action-bar').style.display = 'flex';
+        document.getElementById('link-open').href = droppedUrl;
+        showToast('✅ 히스토리 항목이 화면에 배치되었습니다!');
+        return;
+    }
+
+    // 2. Local file drag-and-drop
     const file = e.dataTransfer.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
@@ -1278,7 +1309,6 @@ function handlePreviewDrop(e) {
     const reader = new FileReader();
     reader.onload = (ev) => {
         const dataUrl = ev.target.result;
-        // Show in preview center
         if (file.type.startsWith('image/')) {
             const imgEl = document.getElementById('preview-img');
             imgEl.src = dataUrl; imgEl.style.display = 'block';
@@ -1593,6 +1623,15 @@ function filterGallery(filter) {
     renderGallery();
 }
 
+function handleGalleryDragStart(e, idx) {
+    const filtered = galleryFilter === 'all' ? galleryItems : galleryItems.filter(i => i.type === galleryFilter);
+    const item = filtered[idx];
+    if (!item) return;
+    e.dataTransfer.setData('text/plain', item.src);
+    e.dataTransfer.setData('application/json', JSON.stringify(item));
+    e.dataTransfer.effectAllowed = 'copy';
+}
+
 function renderGallery() {
     const grid = document.getElementById('gallery-grid');
     const filtered = galleryFilter === 'all' ? galleryItems : galleryItems.filter(i => i.type === galleryFilter);
@@ -1611,7 +1650,7 @@ function renderGallery() {
             ? `<video src="${item.src}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
             : `<img src="${item.src}" alt="${item.prompt}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`;
 
-        return `<div class="gallery-item" onclick="previewGalleryItem(${idx})" onmouseenter="this.querySelector('video') && this.querySelector('video').play()" onmouseleave="this.querySelector('video') && (this.querySelector('video').pause(), this.querySelector('video').currentTime=0)">
+        return `<div class="gallery-item" draggable="true" ondragstart="handleGalleryDragStart(event, ${idx})" onclick="previewGalleryItem(${idx})" onmouseenter="this.querySelector('video') && this.querySelector('video').play()" onmouseleave="this.querySelector('video') && (this.querySelector('video').pause(), this.querySelector('video').currentTime=0)">
             ${mediaEl}
             <div class="item-overlay">
                 <span class="item-type-badge">${isVideo ? '🎬 VIDEO' : '🖼️ IMG'}</span>
@@ -1708,6 +1747,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -2734,6 +2774,70 @@ checkAuth();
                 }
             }, []);
 
+            const onCanvasDragOver = useCallback((e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            }, []);
+
+            const onCanvasDrop = useCallback((e) => {
+                e.preventDefault();
+                const droppedUrl = e.dataTransfer.getData('text/plain');
+                const jsonStr = e.dataTransfer.getData('application/json');
+                let itemData = null;
+                if (jsonStr) {
+                    try { itemData = JSON.parse(jsonStr); } catch (ex) {}
+                }
+
+                if (!droppedUrl) return;
+
+                const isVideo = (itemData && itemData.type === 'video') || droppedUrl.includes('.mp4') || droppedUrl.includes('video');
+                const promptText = itemData?.prompt || '';
+
+                const id = `n_${Date.now()}`;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = Math.max(40, e.clientX - rect.left - 100);
+                const y = Math.max(40, e.clientY - rect.top - 50);
+
+                if (isVideo) {
+                    const newNode = {
+                        id,
+                        type: 'video',
+                        position: { x, y },
+                        data: {
+                            prompt: promptText,
+                            videoUrl: droppedUrl,
+                            model: 'kling-v3.0',
+                            dur: '5',
+                            status: '완료',
+                            onChange: onNodeDataChange,
+                            onRun: onRunSingleNode,
+                            onPreview: handlePreview
+                        }
+                    };
+                    setNodes((nds) => nds.concat(newNode));
+                    showToast('🎬 히스토리 비디오 노드가 캔버스에 추가되었습니다!');
+                } else {
+                    const newNode = {
+                        id,
+                        type: 'image',
+                        position: { x, y },
+                        data: {
+                            prompt: promptText,
+                            imageUrl: droppedUrl,
+                            inputImage: droppedUrl,
+                            model: 'gemini-3.1-flash-image-preview',
+                            res: '1k',
+                            status: '완료',
+                            onChange: onNodeDataChange,
+                            onRun: onRunSingleNode,
+                            onPreview: handlePreview
+                        }
+                    };
+                    setNodes((nds) => nds.concat(newNode));
+                    showToast('🖼️ 히스토리 이미지 노드가 캔버스에 추가되었습니다!');
+                }
+            }, [onNodeDataChange, onRunSingleNode, handlePreview]);
+
             return (
                 <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div className="canvas-control-bar">
@@ -2762,7 +2866,7 @@ checkAuth();
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, position: 'relative' }}>
+                    <div style={{ flex: 1, position: 'relative' }} onDragOver={onCanvasDragOver} onDrop={onCanvasDrop}>
                         <ReactFlow
                             nodes={nodes}
                             edges={edges}
@@ -2855,6 +2959,7 @@ checkAuth();
     
 
 })();
+
 
 
 

@@ -1868,77 +1868,7 @@ class WorkflowNodeData(BaseModel):
     imageUrl: Optional[str] = None
     videoUrl: Optional[str] = None
 
-class WorkflowNodeExecuteRequest(BaseModel):
-    node: WorkflowNodeData
-    parent_prompt: Optional[Dict[str, Any]] = None
-    parent_image: Optional[Dict[str, Any]] = None
-    user_id: Optional[str] = None
 
-@app.post("/api/workflow/node-execute")
-def workflow_node_execute(req: WorkflowNodeExecuteRequest):
-    node = req.node
-    node_type = node.type
-
-    if node_type == "image":
-        prompt = node.prompt or "A cinematic masterpiece"
-        if node.style and node.style != "None":
-            prompt = f"{prompt}, {node.style} style"
-        if node.negativePrompt:
-            prompt += f" --no {node.negativePrompt}"
-
-        model_name = node.model or "gemini-3.1-flash-image-preview"
-
-        # Generate image using Nanobanana Request handler
-        nano_req = NanobananaRequest(
-            prompt=prompt,
-            image=node.inputImage,
-            model=model_name,
-            model_name=model_name,
-            aspect_ratio=node.ratio or "16:9",
-            mode=node.res or "2k"
-        )
-        res_data = nanobanana_generate(nano_req)
-        img_url = res_data.get("image_url") or res_data.get("url")
-
-        # Save to Generations DB if user_id present
-        if req.user_id and img_url:
-            gen_req = GenerationSaveRequest(
-                user_id=req.user_id,
-                prompt=prompt,
-                image_url=img_url,
-                model_name=model_name,
-                type="image"
-            )
-            save_generation(gen_req)
-
-        return {"status": "success", "result": {"imageUrl": img_url}}
-
-    elif node_type == "video":
-        prompt = node.prompt or "Cinematic motion"
-        image_url = node.imageUrl or node.inputImage
-
-        v_req = CreateVideoRequest(
-            prompt=prompt,
-            duration=int(node.dur) if node.dur and str(node.dur).isdigit() else 5,
-            aspect_ratio=node.ratio or "16:9",
-            mode=node.res if node.res in ("std", "pro") else "std",
-            model_name=node.model or "kling-v2.5-turbo",
-            sound=node.sound or "off",
-            image=image_url
-        )
-        kling_res = create_video(v_req)
-        task_id = kling_res.get("task_id")
-        task_type = kling_res.get("task_type", "image2video" if image_url else "text2video")
-
-        return {
-            "status": "polling",
-            "task_id": task_id,
-            "task_type": task_type,
-            "model_name": node.model or "kling-v2.5-turbo",
-            "prompt": prompt
-        }
-
-    return {"status": "success", "result": {}}
 
 # =====================================================
 # CANVAS PROJECTS API
