@@ -1105,7 +1105,11 @@ const imageModels = [
     { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro (3.0 Pro) - $0.24/장' }
 ];
 const videoModels = [
-    { value: 'dreamina-seedance-2-0-260128', label: 'Seedance 2.0 (Dreamina Seedance 2.0)' }
+    { value: 'dreamina-seedance-2-0-260128', label: 'Seedance 2.0 (Dreamina Seedance 2.0)' },
+    { value: 'kling-v3.0', label: 'Kling 3.0 Standard - $0.58/5초' },
+    { value: 'kling-v2.5-turbo', label: 'Kling 2.5 Turbo (Preview) - $0.28/5초' },
+    { value: 'kling-v2.6-i2v', label: 'Kling 2.6 I2V (Stable) - $0.45/5초' },
+    { value: 'kling-v3.0-omni', label: 'Kling 3.0 Omni (Premium) - $0.79/5초' }
 ];
 
 function setMode(mode) {
@@ -1759,6 +1763,7 @@ checkAuth();
 
 
 
+
 (() => {
 
 
@@ -2090,6 +2095,10 @@ checkAuth();
                             <span>AI 모델</span>
                             <select className="node-select" value={data.model || 'dreamina-seedance-2-0-260128'} onChange={(e) => onChange('model', e.target.value)}>
                                 <option value="dreamina-seedance-2-0-260128">Seedance 2.0 (Dreamina Seedance 2.0)</option>
+                                <option value="kling-v3.0">Kling 3.0 Standard</option>
+                                <option value="kling-v2.5-turbo">Kling 2.5 Turbo</option>
+                                <option value="kling-v2.6-i2v">Kling 2.6 I2V</option>
+                                <option value="kling-v3.0-omni">Kling 3.0 Omni</option>
                             </select>
                         </div>
                         <div className="node-row">
@@ -3017,6 +3026,7 @@ checkAuth();
     
 
 })();
+
 
 
 
