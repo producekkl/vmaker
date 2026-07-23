@@ -739,11 +739,89 @@
 
             <div class="nav-section">
                 <div class="nav-section-title">생성 모드</div>
-                <div class="nav-item active" id="nav-studio" onclick="switchMode('studio')">
-                    <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    AI 생성
+                <div class="nav-item active" id="nav-studio" onclick="toggleStudioAccordion()" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        AI 생성
+                    </div>
+                    <svg id="studio-acc-icon" style="width:14px; height:14px; transition: transform 0.2s; transform: rotate(180deg);" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
-                <div class="nav-item" id="nav-canvas" onclick="toggleCanvasAccordion()" style="justify-content: space-between;">
+                
+                <!-- AI 생성 하위 메뉴 -->
+                <div id="studio-submenu" style="display: flex; flex-direction: column; padding-left: 12px; margin-top: 4px; gap: 4px;">
+                    <!-- 이미지 생성 -->
+                    <div class="nav-item active" id="nav-image" onclick="setMode('image')" style="margin-bottom: 0;">
+                        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="2"/><polyline points="21 15 16 10 5 21"/></svg>
+                        이미지 생성
+                        <span class="nav-badge">IMAGE</span>
+                    </div>
+                    <!-- 이미지 생성 설정 -->
+                    <div id="settings-image" class="sub-settings" style="display: flex; flex-direction: column; padding: 4px 0 8px 12px; gap: 4px; border-left: 1px solid rgba(255,255,255,0.1); margin-left: 12px; margin-bottom: 8px;">
+                        <div class="setting-row">
+                            <span class="setting-label">비율</span>
+                            <select class="setting-select" id="nav-ratio-img" onchange="updateRatio(this.value)">
+                                <option value="16:9">16:9</option>
+                                <option value="9:16">9:16</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:3">4:3</option>
+                                <option value="3:4">3:4</option>
+                                <option value="21:9">21:9</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" id="img-res-row">
+                            <span class="setting-label">해상도</span>
+                            <select class="setting-select" id="nav-img-res" onchange="updateImgRes(this.value)">
+                                <option value="1.5k">1.5K</option>
+                                <option value="2k" selected>2K</option>
+                                <option value="4k">4K</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 비디오 생성 -->
+                    <div class="nav-item" id="nav-video" onclick="setMode('video')" style="margin-bottom: 0;">
+                        <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                        비디오 생성
+                        <span class="nav-badge">VIDEO</span>
+                    </div>
+                    <!-- 비디오 생성 설정 -->
+                    <div id="settings-video" class="sub-settings" style="display: none; flex-direction: column; padding: 4px 0 8px 12px; gap: 4px; border-left: 1px solid rgba(255,255,255,0.1); margin-left: 12px; margin-bottom: 8px;">
+                        <div class="setting-row">
+                            <span class="setting-label">비율</span>
+                            <select class="setting-select" id="nav-ratio-vid" onchange="updateRatio(this.value)">
+                                <option value="16:9">16:9</option>
+                                <option value="9:16">9:16</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:3">4:3</option>
+                                <option value="3:4">3:4</option>
+                                <option value="21:9">21:9</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" id="vid-dur-row">
+                            <span class="setting-label">길이</span>
+                            <select class="setting-select" id="nav-vid-dur" onchange="updateVidDur(this.value)">
+                                <option value="5" selected>5초</option>
+                                <option value="10">10초</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" id="vid-quality-row">
+                            <span class="setting-label">퀄리티</span>
+                            <select class="setting-select" id="nav-vid-quality" onchange="updateVidQuality(this.value)">
+                                <option value="std" selected>Standard</option>
+                                <option value="pro">Pro (HD)</option>
+                            </select>
+                        </div>
+                        <div class="setting-row" id="vid-audio-row">
+                            <span class="setting-label">AI 오디오</span>
+                            <label class="mini-toggle">
+                                <input type="checkbox" id="nav-audio">
+                                <span class="mini-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-item" id="nav-canvas" onclick="toggleCanvasAccordion()" style="justify-content: space-between; margin-top: 12px;">
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
                         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
                         캔버스 워크플로우
@@ -753,64 +831,6 @@
                 <!-- Canvas Projects Sub-list -->
                 <div id="canvas-projects-list" style="display: none; flex-direction: column; padding-left: 12px; margin-top: 4px; gap: 4px;">
                     <!-- Items injected here -->
-                </div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-section-title">AI 모델</div>
-                <div class="nav-item" id="nav-image" onclick="setMode('image')">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="2"/><polyline points="21 15 16 10 5 21"/></svg>
-                    이미지 생성
-                    <span class="nav-badge">IMAGE</span>
-                </div>
-                <div class="nav-item" id="nav-video" onclick="setMode('video')">
-                    <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                    비디오 생성
-                    <span class="nav-badge">VIDEO</span>
-                </div>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-section-title">설정</div>
-                <div class="setting-row">
-                    <span class="setting-label">비율</span>
-                    <select class="setting-select" id="nav-ratio" onchange="updateRatio(this.value)">
-                        <option value="16:9">16:9</option>
-                        <option value="9:16">9:16</option>
-                        <option value="1:1">1:1</option>
-                        <option value="4:3">4:3</option>
-                        <option value="3:4">3:4</option>
-                        <option value="21:9">21:9</option>
-                    </select>
-                </div>
-                <div class="setting-row" id="img-res-row">
-                    <span class="setting-label">해상도</span>
-                    <select class="setting-select" id="nav-img-res" onchange="updateImgRes(this.value)">
-                        <option value="1.5k">1.5K</option>
-                        <option value="2k" selected>2K</option>
-                        <option value="4k">4K</option>
-                    </select>
-                </div>
-                <div class="setting-row" id="vid-dur-row" style="display:none">
-                    <span class="setting-label">길이</span>
-                    <select class="setting-select" id="nav-vid-dur" onchange="updateVidDur(this.value)">
-                        <option value="5" selected>5초</option>
-                        <option value="10">10초</option>
-                    </select>
-                </div>
-                <div class="setting-row" id="vid-quality-row" style="display:none">
-                    <span class="setting-label">퀄리티</span>
-                    <select class="setting-select" id="nav-vid-quality" onchange="updateVidQuality(this.value)">
-                        <option value="std" selected>Standard</option>
-                        <option value="pro">Pro (HD)</option>
-                    </select>
-                </div>
-                <div class="setting-row" id="vid-audio-row" style="display:none">
-                    <span class="setting-label">AI 오디오</span>
-                    <label class="mini-toggle">
-                        <input type="checkbox" id="nav-audio">
-                        <span class="mini-slider"></span>
-                    </label>
                 </div>
             </div>
         </div>
@@ -932,6 +952,21 @@ async function checkAuth() {
     }
 }
 
+let isStudioAccordionOpen = true;
+function toggleStudioAccordion() {
+    isStudioAccordionOpen = !isStudioAccordionOpen;
+    const list = document.getElementById('studio-submenu');
+    const icon = document.getElementById('studio-acc-icon');
+    if (isStudioAccordionOpen) {
+        list.style.display = 'flex';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        list.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+let isCanvasAccordionOpen = false;
 function toggleCanvasAccordion() {
     const list = document.getElementById('canvas-projects-list');
     const icon = document.getElementById('canvas-acc-icon');
@@ -1111,10 +1146,10 @@ function setMode(mode) {
     });
 
     // Show/hide settings
-    document.getElementById('img-res-row').style.display = mode === 'image' ? '' : 'none';
-    document.getElementById('vid-dur-row').style.display = mode === 'video' ? '' : 'none';
-    document.getElementById('vid-quality-row').style.display = mode === 'video' ? '' : 'none';
-    document.getElementById('vid-audio-row').style.display = mode === 'video' ? '' : 'none';
+    const imgSettings = document.getElementById('settings-image');
+    const vidSettings = document.getElementById('settings-video');
+    if (imgSettings) imgSettings.style.display = mode === 'image' ? 'flex' : 'none';
+    if (vidSettings) vidSettings.style.display = mode === 'video' ? 'flex' : 'none';
 
     populateModels();
     updateI2VBadge();
@@ -1164,7 +1199,13 @@ function updateCostDisplay() {
 // =====================================================
 // SETTINGS UPDATES
 // =====================================================
-function updateRatio(val) { currentRatio = val; }
+function updateRatio(val) { 
+    currentRatio = val; 
+    const rImg = document.getElementById('nav-ratio-img');
+    const rVid = document.getElementById('nav-ratio-vid');
+    if(rImg && rImg.value !== val) rImg.value = val;
+    if(rVid && rVid.value !== val) rVid.value = val;
+}
 function updateImgRes(val) { currentImgRes = val; updateCostDisplay(); }
 function updateVidDur(val) { currentVidDur = parseInt(val); }
 function updateVidQuality(val) { currentVidQuality = val; }
@@ -1664,7 +1705,6 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
-(() => {
 
         const { useState, useCallback, useRef, useEffect } = React;
 
@@ -2789,7 +2829,6 @@ checkAuth();
         const root = ReactDOM.createRoot(container);
         root.render(<App />);
     
-})();
 </script>
 </body>
 </html>
