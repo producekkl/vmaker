@@ -935,6 +935,11 @@ const videoModels = [
 ];
 
 function setMode(mode) {
+    if (window.location.pathname.includes('/canvas')) {
+        window.location.href = '/motionpix';
+        return;
+    }
+
     activeMode = mode;
 
     // Update nav items

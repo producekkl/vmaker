@@ -12,7 +12,7 @@ canvas_style = re.sub(r'\*\s*{[^}]*}', '', canvas_style, flags=re.DOTALL)
 # Adjust left-bar to top-bar
 left_bar_css = """.left-bar {
             position: absolute;
-            top: 24px;
+            top: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(22, 23, 29, 0.95);
