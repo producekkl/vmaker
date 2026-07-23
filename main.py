@@ -106,7 +106,7 @@ def ensure_public_url(data_or_url: str, default_filename: str) -> str:
 
 def get_supabase_config():
     supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
-    supabase_key = os.getenv("SUPABASE_SECRET_KEY", "")
+    supabase_key = os.getenv("SUPABASE_SECRET_KEY", "") or os.getenv("SUPABASE_ANON_KEY", "")
     bucket = os.getenv("SUPABASE_BUCKET", "vmaker_storage")
     return supabase_url, supabase_key, bucket
 

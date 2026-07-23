@@ -1,15 +1,9 @@
 import re
+import subprocess
 
-# We don't checkout old commits anymore to preserve recent changes
-
-with open('c:/anti/2/static/studio.html', 'r', encoding='utf-8') as f:
-    studio_html = f.read()
-
-with open('c:/anti/2/static/canvas.html', 'r', encoding='utf-8') as f:
-    canvas_html = f.read()
-
-# 1. Extract React Flow CSS and custom node styles from canvas.html
-style_match = re.search(r'<style>(.*?)</style>', canvas_html, re.DOTALL)
+# 1. Get the original PURE canvas CSS from git history
+old_canvas = subprocess.check_output(['git', 'show', '4e17c52:static/canvas.html']).decode('utf-8')
+style_match = re.search(r'<style>(.*?)</style>', old_canvas, re.DOTALL)
 canvas_style = style_match.group(1) if style_match else ""
 # Remove base styles that conflict with studio.html
 canvas_style = re.sub(r'body,\s*html,\s*#root\s*{[^}]*}', '', canvas_style, flags=re.DOTALL)
@@ -57,14 +51,54 @@ tool_btn_css = """.tool-btn {
 """
 canvas_style = re.sub(r'\.tool-btn\s*{.*?(?=\/\* Custom)', tool_btn_css, canvas_style, flags=re.DOTALL)
 
+# 2. Get the studio HTML
+with open('c:/anti/2/static/studio.html', 'r', encoding='utf-8') as f:
+    studio_html = f.read()
 
-# 2. Extract React and Babel scripts from canvas.html
+# 3. Get the CURRENT canvas Babel script
+with open('c:/anti/2/static/canvas.html', 'r', encoding='utf-8') as f:
+    canvas_html = f.read()
+
 babel_match = re.search(r'<script type="text/babel">(.*?)</script>', canvas_html, re.DOTALL)
 babel_script = babel_match.group(1) if babel_match else ""
 
 # Ensure babel script is wrapped in IIFE to prevent variable collision with global JS
 if not babel_script.strip().startswith('(() => {'):
     babel_script = "(() => {\n" + babel_script + "\n})();"
+
+# Also remove className="top-bar" from the Babel script because it conflicts with studio.html's top-bar!
+babel_script = babel_script.replace('className="top-bar"', 'className="canvas-control-bar"')
+
+# And add the CSS for canvas-control-bar
+canvas_style += """
+.canvas-control-bar {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(22, 23, 29, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    width: max-content;
+}
+.canvas-control-bar .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.top-bar-back {
+    background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+}
+.top-bar-back:hover { color: #fff; }
+"""
 
 deps = """
     <!-- React & ReactDOM (Production) CDN -->
@@ -80,7 +114,6 @@ deps = """
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 """
 
-# 3. Create the new HTML based entirely on studio.html
 new_html = studio_html
 
 # Insert deps and style into <head>
@@ -93,7 +126,7 @@ if center_panel_end == -1:
     center_panel_end = new_html.find('<aside class="right-panel">')
 
 if center_panel_start != -1 and center_panel_end != -1:
-    new_center = '<div class="center-panel" style="position: relative;">\n<div id="root" style="width:100%; height:100%; display:flex; flex-direction:column;"></div>\n</div>\n'
+    new_center = '<div class="center-panel" style="position: relative;">\n<div id="root" style="width:100%; height:100%; display:flex; flex-direction:column; position:relative;"></div>\n</div>\n'
     new_html = new_html[:center_panel_start] + new_center + new_html[center_panel_end:]
 
 # Inject the babel script just before </body>
@@ -106,9 +139,9 @@ new_html = new_html.replace('<a href="/canvas" class="nav-link">Canvas</a>', '<a
 # Swap the "active" class on the left sidebar
 new_html = new_html.replace('<div class="nav-item active" id="nav-studio"', '<div class="nav-item" id="nav-studio"')
 new_html = new_html.replace('<div class="nav-item" id="nav-canvas"', '<div class="nav-item active" id="nav-canvas"')
-
-# To prevent Vanilla JS errors from missing DOM elements in the center panel, we can safely wrap them or just ignore them since they only trigger on user actions inside the center panel which no longer exists.
-# `loadGallery`, `loadCanvasProjectsList`, `deleteProject` do NOT depend on `.center-panel` DOM elements! They will work perfectly!
+# Also remove "active" from nav-image or nav-video if they have it
+new_html = new_html.replace('<div class="nav-item active" id="nav-image"', '<div class="nav-item" id="nav-image"')
+new_html = new_html.replace('<div class="nav-item active" id="nav-video"', '<div class="nav-item" id="nav-video"')
 
 with open('c:/anti/2/static/canvas.html', 'w', encoding='utf-8') as f:
     f.write(new_html)
