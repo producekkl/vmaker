@@ -970,8 +970,10 @@ async function checkAuth() {
 
         populateModels();
         checkHealth();
-        setMode('image');
-        setupDragAndDrop();
+        if (!window.location.pathname.includes('/canvas')) {
+            setMode('image');
+            setupDragAndDrop();
+        }
         loadGenerationsHistory();
         loadCanvasProjectsList();
     } catch (e) {
@@ -1749,6 +1751,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -2880,6 +2883,7 @@ checkAuth();
     
 
 })();
+
 
 
 
