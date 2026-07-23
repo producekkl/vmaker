@@ -1321,9 +1321,19 @@ function startPolling(taskType, taskId, prompt, modelName) {
                 document.getElementById('preview-loader').style.display = 'none';
                 const finalVideoUrl = data.video_url || 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=1280&height=720&nologo=true';
                 const vid = document.getElementById('preview-video');
-                vid.src = finalVideoUrl;
-                vid.style.display = 'block';
-                document.getElementById('preview-img').style.display = 'none';
+                const img = document.getElementById('preview-img');
+
+                const isMp4Video = finalVideoUrl.includes('.mp4') || finalVideoUrl.includes('.webm') || finalVideoUrl.includes('video') || finalVideoUrl.includes('kling');
+                if (isMp4Video) {
+                    vid.src = finalVideoUrl;
+                    vid.style.display = 'block';
+                    img.style.display = 'none';
+                } else {
+                    img.src = finalVideoUrl;
+                    img.style.display = 'block';
+                    vid.style.display = 'none';
+                }
+
                 document.getElementById('preview-placeholder').style.display = 'none';
                 document.getElementById('preview-box').classList.add('has-content');
                 document.getElementById('link-open').href = finalVideoUrl;
