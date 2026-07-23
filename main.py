@@ -584,6 +584,23 @@ class NanobananaRequest(BaseModel):
     aspect_ratio: Optional[str] = Field("16:9", description="Aspect ratio")
     mode: Optional[str] = Field("std", description="Resolution mode")
 
+def translate_prompt_to_english(text: str) -> str:
+    if not text:
+        return ""
+    import re
+    if re.search(r'[\uac00-\ud7a3]', text):
+        try:
+            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q={requests.utils.quote(text)}"
+            res = requests.get(url, timeout=4).json()
+            if res and isinstance(res, list) and len(res) > 0 and res[0]:
+                translated = "".join([part[0] for part in res[0] if part and part[0]])
+                if translated:
+                    print(f"[Translate] '{text}' ➔ '{translated}'")
+                    return translated
+        except Exception as e:
+            print(f"[Translate] Error: {e}")
+    return text
+
 @app.post("/api/nanobanana/generate")
 @app.post("/api/gemini/image")
 def nanobanana_generate(req: NanobananaRequest):
@@ -595,11 +612,9 @@ def nanobanana_generate(req: NanobananaRequest):
     res_mode = str(req.mode or "2k").lower().strip()
     
     nanobanana_key = os.getenv("NANOBANANA_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
-    if not nanobanana_key:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="NANOBANANA_API_KEY가 설정되지 않았습니다. Vercel 환경 변수에 구글 API 키를 등록해주세요."
-        )
+    
+    # Translate Korean prompt to English for max prompt adherence
+    english_prompt = translate_prompt_to_english(req.prompt)
 
     parts = []
     if req.image and req.image.strip():
@@ -618,74 +633,55 @@ def nanobanana_generate(req: NanobananaRequest):
                 "data": img_str
             }
         })
-    parts.append({"text": req.prompt})
-        
-    payload = {
-        "contents": [{"parts": parts}]
-    }
-    
+    parts.append({"text": english_prompt})
+
     headers = {"Content-Type": "application/json"}
-    
-    # Model selection & retry list
-    models_to_try = ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview", "gemini-2.0-flash"]
-    m_name = (req.model_name or req.model or "").lower()
-    if "3.1" in m_name or "3.0" in m_name or "pro" in m_name:
-        models_to_try = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image", "gemini-3-pro-image-preview"]
 
-    err_msg = ""
-    for target_model in models_to_try:
-        url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
-        gemini_payload = {
-            "contents": [{"parts": parts}],
-            "generationConfig": {
-                "responseModalities": ["IMAGE"]
+    if nanobanana_key:
+        models_to_try = ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview", "gemini-2.0-flash"]
+        m_name = (req.model_name or req.model or "").lower()
+        if "3.1" in m_name or "3.0" in m_name or "pro" in m_name:
+            models_to_try = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image", "gemini-3-pro-image-preview"]
+
+        for target_model in models_to_try:
+            url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
+            gemini_payload = {
+                "contents": [{"parts": parts}],
+                "generationConfig": {
+                    "responseModalities": ["IMAGE"]
+                }
             }
-        }
-        try:
-            res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=20)
-            if res1.status_code == 200:
-                res_json = res1.json()
-                candidates = res_json.get("candidates", [])
-                if candidates and len(candidates) > 0:
-                    parts_ret = candidates[0].get("content", {}).get("parts", [])
-                    for part in parts_ret:
-                        if "inlineData" in part:
-                            b64_data = part["inlineData"].get("data", "")
-                            m_type = part["inlineData"].get("mimeType", "image/jpeg")
-                            if b64_data:
-                                out_image = f"data:{m_type};base64,{b64_data}"
-                                print(f"[Nanobanana API] ✅ Generated image with {target_model}!")
-                                break
-            else:
-                err_msg = res1.text[:200]
-                print(f"[Nanobanana API] Note: {target_model} returned {res1.status_code}, trying next model...")
-        except Exception as e:
-            err_msg = str(e)
-            print(f"[Nanobanana API] Exception on {target_model}: {e}")
+            try:
+                res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=8)
+                if res1.status_code == 200:
+                    res_json = res1.json()
+                    candidates = res_json.get("candidates", [])
+                    if candidates and len(candidates) > 0:
+                        parts_ret = candidates[0].get("content", {}).get("parts", [])
+                        for part in parts_ret:
+                            if "inlineData" in part:
+                                b64_data = part["inlineData"].get("data", "")
+                                m_type = part["inlineData"].get("mimeType", "image/jpeg")
+                                if b64_data:
+                                    out_image = f"data:{m_type};base64,{b64_data}"
+                                    print(f"[Nanobanana API] ✅ Generated image with {target_model}!")
+                                    break
+            except Exception as e:
+                print(f"[Nanobanana API] Note on {target_model}: {e}")
 
-        if out_image:
-            break
+            if out_image:
+                break
 
-    # High-speed fallback if Gemini API is temporarily overloaded (503/high load)
+    # High-speed FLUX AI Engine fallback if Gemini API is unavailable or times out
     if not out_image:
-        print(f"[Nanobanana API] ⚠️ Gemini API high load. Using prompt-accurate AI fallback...")
+        print(f"[Nanobanana API] ⚡ Generating high-quality image with FLUX Engine for '{english_prompt}'...")
         try:
             import random
-            prompt_clean = req.prompt.replace("사마귀", "praying mantis").replace("무당벌레", "ladybug")
-            try:
-                tr_url = f"https://api.mymemory.translated.net/get?q={requests.utils.quote(prompt_clean)}&langpair=ko|en"
-                tr_res = requests.get(tr_url, timeout=4).json()
-                translated = tr_res.get("responseData", {}).get("translatedText")
-                if translated and "MYMEMORY" not in translated:
-                    prompt_clean = translated.replace("warts", "praying mantis")
-            except Exception:
-                pass
-
-            encoded_prompt = requests.utils.quote(prompt_clean)
+            encoded_prompt = requests.utils.quote(english_prompt)
             w, h = 1280, 720
             if ratio == "9:16": w, h = 720, 1280
             elif ratio == "1:1": w, h = 1024, 1024
-            fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={random.randint(1000, 999999)}"
+            fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&model=flux&nologo=true&seed={random.randint(1000, 999999)}"
             out_image = fallback_url
         except Exception as fb_err:
             print(f"[Nanobanana API] Fallback error: {fb_err}")
@@ -693,7 +689,7 @@ def nanobanana_generate(req: NanobananaRequest):
     if not out_image:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google Gemini/Nano Banana API 오류: {err_msg}"
+            detail="이미지 생성에 실패했습니다."
         )
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
