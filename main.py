@@ -302,64 +302,54 @@ def create_video(req: CreateVideoRequest):
     req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
 
-    # Seedance 2.0 - OpenRouter API Exclusive Integration
+    # Seedance 2.0 - Official BytePlus Ark Video Generation GPU API
     if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower:
-        openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
-        if not openrouter_key:
-            raise HTTPException(
-                status_code=400,
-                detail="⚠️ OPENROUTER_API_KEY가 환경변수에 설정되어 있지 않습니다. Vercel 환경변수를 확인해주세요."
-            )
-        
-        or_url = "https://openrouter.ai/api/v1/chat/completions"
-        or_headers = {
-            "Authorization": f"Bearer {openrouter_key}",
-            "HTTP-Referer": "https://vmaker.vercel.app",
-            "X-Title": "MotionPix",
-            "Content-Type": "application/json"
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
+        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
+        seedance_model = os.getenv("BYTEPLUS_SEEDANCE_MODEL", "dreamina-seedance-2-0-260128")
+
+        target_url = f"{ark_base}/contents/generations/tasks"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {ark_key}"
         }
-        
-        # OpenRouter target model for Seedance 2.0
-        target_or_model = os.getenv("OPENROUTER_SEEDANCE_MODEL", "bytedance-seed/seed-2.0-lite")
-        
-        messages = [{"role": "user", "content": f"Generate video: {translate_prompt_to_english(req.prompt)}"}]
+
+        contents = [{"type": "text", "text": translate_prompt_to_english(req.prompt)}]
         if req.image and req.image.strip():
             pub_img_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
-            messages.append({
-                "role": "user",
-                "content": [{"type": "image_url", "image_url": {"url": pub_img_url}}]
+            contents.append({
+                "type": "image_url",
+                "image_url": {"url": pub_img_url}
             })
 
-        or_payload = {
-            "model": target_or_model,
-            "messages": messages
+        payload = {
+            "model": seedance_model,
+            "content": contents
         }
-        
+
         try:
-            or_res = requests.post(or_url, json=or_payload, headers=or_headers, timeout=25)
-            if or_res.status_code == 200:
-                or_data = or_res.json()
-                task_id = or_data.get("id") or str(uuid.uuid4())
+            res = requests.post(target_url, json=payload, headers=headers, timeout=25)
+            res_data = res.json() if res.status_code == 200 else {}
+            if res.status_code == 200 and ("id" in res_data or "task_id" in res_data):
+                task_id = res_data.get("id") or res_data.get("task_id")
                 return {
                     "task_id": task_id,
-                    "task_type": "openrouter",
-                    "status": "submitted",
-                    "openrouter_response": or_data
+                    "task_type": "seedance",
+                    "status": "submitted"
                 }
             else:
-                try:
-                    err_json = or_res.json()
-                    err_msg = err_json.get("error", {}).get("message") or or_res.text
-                except Exception:
-                    err_msg = or_res.text
-                raise HTTPException(
-                    status_code=or_res.status_code,
-                    detail=f"OpenRouter API 오류 ({or_res.status_code}): {err_msg}"
-                )
+                err_msg = res.text
+                print(f"[Seedance 2.0 Ark API Error]: {err_msg}")
+                if "ModelNotOpen" in err_msg:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="⚠️ BytePlus 콘솔에서 Dreamina-Seedance-2.0 모델이 활성화(Activate)되어 있지 않습니다. console.byteplus.com -> Model Catalog에서 무료 Activate 1클릭 해주세요."
+                    )
+                raise HTTPException(status_code=res.status_code if res.status_code != 200 else 400, detail=f"Seedance API 오류: {err_msg}")
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"OpenRouter Seedance 2.0 연동 실패: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Seedance 2.0 API 연동 실패: {str(e)}")
 
     kling_key = os.getenv("KLING_API_KEY", "")
     kling_base = os.getenv("KLING_API_BASE", "https://api-singapore.klingai.com").rstrip("/")
