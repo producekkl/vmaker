@@ -1193,19 +1193,24 @@
             };
 
             const saveProject = async () => {
+                console.log('SAVE BUTTON CLICKED. userId:', userId, 'projectTitle:', projectTitle);
+                
                 if (!userId) {
+                    console.warn('Save aborted: User is not logged in.');
                     alert('로그인이 필요합니다.');
                     showToast('로그인이 필요합니다.');
                     return;
                 }
                 
                 if (!projectTitle.trim()) {
+                    console.warn('Save aborted: Project title is empty.');
                     alert('프로젝트 제목을 입력해주세요.');
                     showToast('프로젝트 제목을 입력해주세요.');
                     return;
                 }
                 
                 try {
+                    console.log('Sending save request to backend...');
                     const payload = {
                         user_id: userId,
                         project_id: currentProjectId,
