@@ -299,6 +299,57 @@ def health_check():
 
 @app.post("/api/kling/create")
 def create_video(req: CreateVideoRequest):
+    req_m = req.model_name or ""
+    m_lower = req_m.lower()
+
+    # BytePlus Seedance 2.0 API integration
+    if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower:
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
+        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
+        seedance_model = os.getenv("BYTEPLUS_SEEDANCE_MODEL", "dreamina-seedance-2-0-260128")
+
+        target_url = f"{ark_base}/contents/generations/tasks"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {ark_key}"
+        }
+
+        contents = [{"type": "text", "text": translate_prompt_to_english(req.prompt)}]
+        if req.image and req.image.strip():
+            pub_img_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
+            contents.append({
+                "type": "image_url",
+                "image_url": {"url": pub_img_url}
+            })
+
+        payload = {
+            "model": seedance_model,
+            "content": contents
+        }
+
+        try:
+            res = requests.post(target_url, json=payload, headers=headers, timeout=20)
+            res_data = res.json() if res.status_code == 200 else {}
+            if res.status_code == 200 and ("id" in res_data or "task_id" in res_data):
+                task_id = res_data.get("id") or res_data.get("task_id")
+                return {
+                    "task_id": task_id,
+                    "task_type": "seedance",
+                    "status": "submitted"
+                }
+            else:
+                err_msg = res.text
+                if "ModelNotOpen" in err_msg:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="⚠️ BytePlus 콘솔에서 Dreamina-Seedance-2.0 모델 서비스가 활성화(Activate)되어 있지 않습니다. BytePlus 콘솔에서 Activate Model을 완료해주세요."
+                    )
+                raise HTTPException(status_code=res.status_code if res.status_code != 200 else 400, detail=f"Seedance API 오류: {err_msg}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Seedance API 연동 오류: {str(e)}")
+
     kling_key = os.getenv("KLING_API_KEY", "")
     kling_base = os.getenv("KLING_API_BASE", "https://api-singapore.klingai.com").rstrip("/")
 
@@ -313,8 +364,6 @@ def create_video(req: CreateVideoRequest):
     sound = "on" if str(req.sound).lower() in ("on", "true", "1") else "off"
 
     model_to_use = "kling-v1"
-    req_m = req.model_name or ""
-    m_lower = req_m.lower()
     if "1.6" in m_lower or "2.5" in m_lower or "3.0" in m_lower or "turbo" in m_lower or "i2v" in m_lower:
         model_to_use = "kling-v1-6"
     elif "1.5" in m_lower or "v1-5" in m_lower:
@@ -328,17 +377,14 @@ def create_video(req: CreateVideoRequest):
         "sound": sound
     }
 
-    # Strictly strip 'mode' key for kling-v1-5 / kling-v1-6 models
     if model_to_use == "kling-v1":
         if req.mode in ("std", "pro"):
             payload["mode"] = req.mode
 
-    # If image (URL or Base64 string) is provided, append it and use image2video route
     is_image = bool(req.image and req.image.strip())
     if is_image:
         payload["image"] = ensure_public_url(req.image.strip(), "input_image.jpg")
         target_url = f"{kling_base}/v1/videos/image2video"
-        # Kling AI API does NOT support sound for image2video; strip sound key to prevent API error
         if "sound" in payload:
             del payload["sound"]
     else:
@@ -415,6 +461,30 @@ def create_video(req: CreateVideoRequest):
 @app.get("/api/kling/status/{task_type}/{task_id}")
 @app.get("/api/kling/task/{task_type}/{task_id}")
 def check_status(task_type: str, task_id: str):
+    if task_type == "seedance":
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
+        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
+        headers = {"Authorization": f"Bearer {ark_key}"}
+        try:
+            res = requests.get(f"{ark_base}/contents/generations/tasks/{task_id}", headers=headers, timeout=15)
+            if res.status_code == 200:
+                data = res.json()
+                status_str = str(data.get("status") or "").lower()
+                video_url = None
+                if status_str in ("succeeded", "completed", "success"):
+                    content = data.get("content", {})
+                    if isinstance(content, dict):
+                        video_url = content.get("video_url") or content.get("url")
+                return {
+                    "task_status": "succeed" if status_str in ("succeeded", "completed", "success") else (
+                        "failed" if status_str in ("failed", "cancelled") else "processing"
+                    ),
+                    "video_url": video_url,
+                    "raw_response": data
+                }
+        except Exception as e:
+            print(f"[Seedance Status Error]: {e}")
+
     if task_type not in ("text2video", "image2video"):
         task_type = "text2video"
         
