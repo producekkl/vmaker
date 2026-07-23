@@ -885,6 +885,16 @@
                     ? (imageNode.data.imageUrl || imageNode.data.inputImage || null)
                     : null;
 
+                // Get User ID from Supabase local storage token
+                let userId = null;
+                const sbKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+                if (sbKey) {
+                    try {
+                        const sessionData = JSON.parse(localStorage.getItem(sbKey));
+                        userId = sessionData?.user?.id || null;
+                    } catch(e) {}
+                }
+
                 const finalPayload = {
                     node: {
                         id: node.id,
@@ -912,8 +922,10 @@
                         inputImage: imageNode.data.inputImage || null,
                         resolution: imageNode.data.res || '1k',
                         model: imageNode.data.model || null
-                    } : null
+                    } : null,
+                    user_id: userId
                 };
+
 
                 console.log('[MotionPix] Final merged payload →', JSON.stringify(finalPayload, null, 2));
                 showToast(`🚀 ${node.type.toUpperCase()} 노드 실행 시작...`);

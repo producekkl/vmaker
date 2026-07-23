@@ -1102,12 +1102,15 @@ def poll_kling_task_until_done(task_type: str, task_id: str, max_wait_sec: int =
                         if v_url:
                             return v_url
                 elif task_status in ("failed", "error"):
-                    print(f"Kling task failed: {data}")
-                    return None
+                    err_msg = inner_data.get("task_status_msg", data.get("message", "Unknown Kling Error"))
+                    print(f"Kling task failed: {err_msg} ({data})")
+                    raise Exception(f"Kling API 실패: {err_msg}")
         except Exception as e:
+            if "Kling API 실패" in str(e):
+                raise e
             print(f"Polling exception: {e}")
         time.sleep(4)
-    return None
+    raise Exception(f"Kling API 폴링 시간 초과 ({max_wait_sec}초)")
 
 @app.post("/api/workflow/execute")
 async def execute_workflow_pipeline(req: WorkflowExecReq):
@@ -1263,6 +1266,7 @@ class SingleNodeExecReq(BaseModel):
     node: Dict[str, Any]
     parent_prompt: Optional[Dict[str, Any]] = None
     parent_image: Optional[Dict[str, Any]] = None
+    user_id: Optional[str] = None
 
 @app.post("/api/workflow/node-execute")
 async def execute_single_node(req: SingleNodeExecReq):
@@ -1371,28 +1375,18 @@ async def execute_single_node(req: SingleNodeExecReq):
                 print(f"[Video Node] ⚠️ MISSING UPSTREAM VALUES: {missing_fields}")
 
             # ─────────────────────────────────────────────────────────────
-            # Fix local URLs: /static/... paths are not publicly accessible.
-            # Convert to full http://... URL or upload to tmpfiles if needed.
+            # Fix local URLs / Base64 to Public URLs via Supabase Storage
             # ─────────────────────────────────────────────────────────────
-            if img_src and img_src.startswith("/static/"):
-                local_file = img_src.lstrip("/")  # e.g. static/downloads/motionpix_xxx.jpg
-                if os.path.exists(local_file):
-                    try:
-                        with open(local_file, "rb") as f:
-                            file_bytes = f.read()
-                        ext = "png" if local_file.endswith(".png") else "jpg"
-                        mime_type = f"image/{ext}"
-                        storage_path = f"workflow/{uuid.uuid4().hex[:12]}.{ext}"
-                        pub_url = upload_to_supabase_storage(file_bytes, storage_path, mime_type)
-                        if pub_url:
-                            print(f"[Video Node] Uploaded local image to Supabase Storage: {pub_url}")
-                            img_src = pub_url
-                        else:
-                            print(f"[Video Node] ⚠️ Supabase Storage upload failed for local image")
-                    except Exception as upload_ex:
-                        print(f"[Video Node] ⚠️ Failed to upload local image to Supabase: {upload_ex}")
-                else:
-                    print(f"[Video Node] ⚠️ Local file not found: {local_file}")
+            if img_src and (img_src.startswith("/static/") or img_src.startswith("data:image")):
+                try:
+                    pub_url = ensure_public_url(img_src, f"canvas_image.jpg")
+                    if pub_url and pub_url.startswith("http"):
+                        print(f"[Video Node] Converted image to public URL: {pub_url}")
+                        img_src = pub_url
+                    else:
+                        print(f"[Video Node] ⚠️ Failed to upload image to Supabase Storage")
+                except Exception as upload_ex:
+                    print(f"[Video Node] ⚠️ ensure_public_url failed: {upload_ex}")
 
             # ─────────────────────────────────────────────────────────────
             # Determine execution mode
@@ -1475,6 +1469,43 @@ async def execute_single_node(req: SingleNodeExecReq):
                 )
             except Exception:
                 pass
+
+        # 3. Save to Generations DB if user_id is present
+        if req.user_id and supabase_url and supabase_key:
+            db_url = f"{supabase_url}/rest/v1/generations"
+            headers = {
+                "Authorization": f"Bearer {supabase_key}",
+                "apikey": supabase_key,
+                "Content-Type": "application/json"
+            }
+            if ntype == "image" and result_data.get("imageUrl"):
+                payload = {
+                    "user_id": req.user_id,
+                    "prompt": prompt_str,
+                    "image_url": result_data["imageUrl"],
+                    "model_name": node.get("model", "gemini-3.1-flash-image-preview"),
+                    "type": "image"
+                }
+            elif ntype == "video" and result_data.get("videoUrl"):
+                payload = {
+                    "user_id": req.user_id,
+                    "prompt": result_data.get("prompt", ""),
+                    "image_url": result_data["videoUrl"],
+                    "model_name": node.get("model", "kling-v2.5-turbo"),
+                    "type": "video"
+                }
+            else:
+                payload = None
+                
+            if payload:
+                try:
+                    res = requests.post(db_url, json=payload, headers=headers, timeout=5)
+                    if res.status_code in (200, 201):
+                        print(f"[{ntype.upper()} Node] Successfully saved generation to DB.")
+                    else:
+                        print(f"[{ntype.upper()} Node] DB save failed: {res.text}")
+                except Exception as e:
+                    print(f"[{ntype.upper()} Node] DB save error: {e}")
 
         return {"status": "success", "run_id": run_id, "node": node, "result": result_data}
 
