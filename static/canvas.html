@@ -969,7 +969,60 @@
                     }
                     const data = await res.json();
 
-                    if (data.status === 'success') {
+                    if (data.status === 'polling') {
+                        // Video Node polling logic
+                        setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '생성 중...' } } : n));
+                        const { task_id, task_type, model_name, prompt: full_prompt } = data;
+                        
+                        let pollInterval = setInterval(async () => {
+                            try {
+                                const statusRes = await fetch(`/api/kling/task/${task_type}/${task_id}`);
+                                if (!statusRes.ok) throw new Error(`Polling API error: ${statusRes.status}`);
+                                const statusData = await statusRes.json();
+                                
+                                if (statusData.data?.task_status === 'succeed' || statusData.data?.task_status === 'completed') {
+                                    clearInterval(pollInterval);
+                                    let vUrl = '';
+                                    const taskRes = statusData.data.task_result;
+                                    if (taskRes && taskRes.videos && taskRes.videos.length > 0) {
+                                        vUrl = taskRes.videos[0].url;
+                                    }
+                                    
+                                    if (vUrl) {
+                                        setNodes((nds) => nds.map(n => n.id === nid ? {
+                                            ...n, data: { ...n.data, status: '완료', videoUrl: vUrl }
+                                        } : n));
+                                        showToast(`✅ Video 생성 완료!`);
+                                        
+                                        // Save to Generations DB
+                                        if (userId) {
+                                            const payload = {
+                                                user_id: userId,
+                                                prompt: full_prompt || '',
+                                                image_url: vUrl,
+                                                model_name: model_name || 'kling-v2.5-turbo',
+                                                type: 'video'
+                                            };
+                                            fetch('/api/generations/save', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(payload)
+                                            }).catch(err => console.error("DB save error", err));
+                                        }
+                                    } else {
+                                        throw new Error("No video URL returned from Kling API");
+                                    }
+                                } else if (statusData.data?.task_status === 'failed') {
+                                    clearInterval(pollInterval);
+                                    throw new Error(statusData.data?.task_status_msg || "Kling task failed");
+                                }
+                            } catch (e) {
+                                clearInterval(pollInterval);
+                                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '실패' } } : n));
+                                showToast('❌ ' + e.message);
+                            }
+                        }, 4000); // 4 second interval
+                    } else if (data.status === 'success') {
                         const result = data.result || {};
                         setNodes((nds) => nds.map(n => {
                             if (n.id === nid) {

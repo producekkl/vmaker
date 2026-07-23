@@ -247,7 +247,7 @@ async def verify_supabase_token(token: str) -> bool:
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
     # Public routes - no auth needed
-    public_paths = ("/api/auth/register-profile", "/api/supabase/config", "/health", "/", "/motionpix", "/login", "/api/assets", "/canvas", "/api/workflow/execute", "/api/workflow/node-execute", "/api/download/proxy", "/api/gemini/image", "/api/kling/create")
+    public_paths = ("/api/auth/register-profile", "/api/supabase/config", "/health", "/", "/motionpix", "/login", "/api/assets", "/canvas", "/api/workflow/execute", "/api/workflow/node-execute", "/api/download/proxy", "/api/gemini/image", "/api/kling/create", "/api/generations/save")
     if path in public_paths or path.startswith("/static/") or path.startswith("/features/") or path.startswith("/api/kling/") or path.startswith("/api/gemini/") or path.startswith("/api/nanobanana/"):
         return await call_next(request)
 
@@ -315,9 +315,9 @@ def create_video(req: CreateVideoRequest):
     model_to_use = "kling-v1"
     req_m = req.model_name or ""
     m_lower = req_m.lower()
-    if "1.6" in m_lower or "2.6" in m_lower or "i2v" in m_lower:
+    if "1.6" in m_lower or "2.5" in m_lower or "3.0" in m_lower or "turbo" in m_lower or "i2v" in m_lower:
         model_to_use = "kling-v1-6"
-    elif "v1-5" in m_lower or "v1.5" in m_lower or "kling-1.5" in m_lower:
+    elif "1.5" in m_lower or "v1-5" in m_lower:
         model_to_use = "kling-v1-5"
 
     payload = {
@@ -1451,21 +1451,28 @@ async def execute_single_node(req: SingleNodeExecReq):
                     task_id = k_res.get("task_id")
                     print(f"[Video Node] Kling task_id={task_id}")
                     if task_id:
-                        video_url = poll_kling_task_until_done(task_type, task_id, max_wait_sec=180)
+                        # Return immediately for frontend polling
+                        return {
+                            "status": "polling", 
+                            "run_id": run_id, 
+                            "node": node, 
+                            "task_id": task_id, 
+                            "task_type": task_type,
+                            "prompt": full_prompt,
+                            "model_name": model_name
+                        }
                 except Exception as ex:
                     print(f"[Video Node] ❌ Kling API exception: {ex}")
                     import traceback; traceback.print_exc()
                     raise HTTPException(status_code=400, detail=str(ex))
             else:
                 print("[Video Node] ⚠️ KLING_API_KEY is not set!")
-
-            if not video_url:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Kling 비디오 생성 실패. 모드: {exec_mode}. 누락 필드: {missing_fields if missing_fields else '없음'}"
-                )
-
-            node["videoUrl"] = video_url
+                
+            # If we fall through here, it means task_id wasn't returned or KLING_API_KEY wasn't set.
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kling 비디오 생성 시작 실패. 모드: {exec_mode}. 누락 필드: {missing_fields if missing_fields else '없음'}"
+            )
             node["status"] = "success"
             result_data = {
                 "videoUrl": video_url,
@@ -1543,6 +1550,42 @@ async def execute_single_node(req: SingleNodeExecReq):
         print(f"[Node Execute] ❌ {ntype} node [{nid}] FAILED: {e}\n{tb}")
         err_msg = getattr(e, "detail", str(e))
         return {"status": "failed", "error": err_msg, "node": node}
+
+class SaveGenerationRequest(BaseModel):
+    user_id: str
+    prompt: str
+    image_url: str
+    model_name: str
+    type: str
+
+@app.post("/api/generations/save")
+def save_generation(req: SaveGenerationRequest):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase config missing")
+        
+    db_url = f"{supabase_url}/rest/v1/generations"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "user_id": req.user_id,
+        "prompt": req.prompt,
+        "image_url": req.image_url,
+        "model_name": req.model_name,
+        "type": req.type
+    }
+    try:
+        res = requests.post(db_url, json=payload, headers=headers, timeout=5)
+        if res.status_code in (200, 201):
+            return {"status": "success"}
+        else:
+            raise HTTPException(status_code=res.status_code, detail=f"DB save failed: {res.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.get("/api/download/proxy")
