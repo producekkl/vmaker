@@ -754,9 +754,10 @@ async function loadCanvasProjectsList() {
         const listContainer = document.getElementById('canvas-projects-list');
         if (listContainer) {
             listContainer.innerHTML = '';
+            let projects = [];
             
             if (data.ok && data.data && data.data.length > 0) {
-                const projects = data.data.slice(0, 3);
+                projects = data.data.slice(0, 3);
                 projects.forEach(proj => {
                     const el = document.createElement('div');
                     el.className = 'nav-item';
@@ -1241,7 +1242,7 @@ async function generateVideo(prompt) {
 
         setUIState('generating');
         document.getElementById('loader-msg').textContent = 'Kling AI가 영상을 생성하고 있습니다 (30~120초)...';
-        startPolling(data.task_type || 'text2video', data.task_id, prompt);
+        startPolling(data.task_type || 'text2video', data.task_id, prompt, model);
     } catch (err) {
         setUIState('failed');
         document.getElementById('preview-placeholder').style.display = 'flex';
@@ -1249,7 +1250,7 @@ async function generateVideo(prompt) {
     }
 }
 
-function startPolling(taskType, taskId, prompt) {
+function startPolling(taskType, taskId, prompt, modelName) {
     let elapsed = 0;
     const timerEl = document.getElementById('loader-timer');
 
@@ -1280,13 +1281,14 @@ function startPolling(taskType, taskId, prompt) {
                 vid.src = data.video_url;
                 vid.style.display = 'block';
                 document.getElementById('preview-img').style.display = 'none';
+                document.getElementById('preview-placeholder').style.display = 'none';
                 document.getElementById('preview-box').classList.add('has-content');
                 document.getElementById('link-open').href = data.video_url;
                 currentDownloadUrl = data.video_url;
                 document.getElementById('action-bar').style.display = 'flex';
 
                 // Add to gallery & save to Supabase Storage/DB
-                addToGallery('video', data.video_url, prompt, model);
+                addToGallery('video', data.video_url, prompt, modelName);
                 setUIState('success');
                 showToast('🎉 비디오 생성 완료!');
             } else if (st === 'failed') {

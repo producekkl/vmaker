@@ -98,6 +98,14 @@ canvas_style += """
     background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-size: 0.85rem; font-weight: 600;
 }
 .top-bar-back:hover { color: #fff; }
+
+.react-flow {
+    background-color: #0b0c10;
+    background-size: 24px 24px;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
 """
 
 deps = """
