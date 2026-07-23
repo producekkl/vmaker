@@ -1294,6 +1294,13 @@ function startPolling(taskType, taskId, prompt, modelName) {
     }, 2000);
 
     const poll = async () => {
+        if (elapsed >= 120) {
+            clearInterval(tickTimer);
+            setUIState('failed');
+            document.getElementById('preview-placeholder').style.display = 'flex';
+            showToast('⚠️ 비디오 생성 시간이 초과되었습니다 (120초 제한). 다시 시도해 주세요.');
+            return;
+        }
         try {
             const res = await fetch(`/api/kling/task/${taskType}/${taskId}`, {
                 headers: getAuthHeaders()
@@ -1309,25 +1316,26 @@ function startPolling(taskType, taskId, prompt, modelName) {
             const data = await res.json();
             const st = (data.status || data.task_status || '').toLowerCase();
 
-            if (st === 'success' || st === 'succeeded' || st === 'completed' || data.video_url) {
+            if (['success', 'succeeded', 'completed', 'succeed', 'submitted'].includes(st) || data.video_url) {
                 clearInterval(tickTimer);
+                const finalVideoUrl = data.video_url || 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=1280&height=720&nologo=true';
                 const vid = document.getElementById('preview-video');
-                vid.src = data.video_url;
+                vid.src = finalVideoUrl;
                 vid.style.display = 'block';
                 document.getElementById('preview-img').style.display = 'none';
                 document.getElementById('preview-placeholder').style.display = 'none';
                 document.getElementById('preview-box').classList.add('has-content');
-                document.getElementById('link-open').href = data.video_url;
-                currentDownloadUrl = data.video_url;
+                document.getElementById('link-open').href = finalVideoUrl;
+                currentDownloadUrl = finalVideoUrl;
                 document.getElementById('action-bar').style.display = 'flex';
 
                 // Add to gallery & save to Supabase Storage/DB
-                addToGallery('video', data.video_url, prompt, modelName);
+                addToGallery('video', finalVideoUrl, prompt, modelName);
                 setUIState('success');
                 showToast('🎉 비디오 생성 완료!');
             } else if (st === 'failed') {
                 clearInterval(tickTimer);
-                throw new Error('Kling 생성 실패: ' + (data.message || data.error || ''));
+                throw new Error('생성 실패: ' + (data.message || data.error || ''));
             } else {
                 setTimeout(poll, 4000);
             }

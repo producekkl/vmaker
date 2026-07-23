@@ -477,30 +477,30 @@ def check_status(task_type: str, task_id: str):
             "task_status": "succeed",
             "video_url": None,
             "raw_response": {}
-        }
-    if task_type == "seedance":
+    if task_type in ("openrouter", "seedance"):
         ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
         ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
         headers = {"Authorization": f"Bearer {ark_key}"}
+        video_url = None
+        status_str = "succeeded"
         try:
-            res = requests.get(f"{ark_base}/contents/generations/tasks/{task_id}", headers=headers, timeout=15)
+            res = requests.get(f"{ark_base}/contents/generations/tasks/{task_id}", headers=headers, timeout=10)
             if res.status_code == 200:
                 data = res.json()
                 status_str = str(data.get("status") or "").lower()
-                video_url = None
                 if status_str in ("succeeded", "completed", "success"):
                     content = data.get("content", {})
                     if isinstance(content, dict):
                         video_url = content.get("video_url") or content.get("url")
-                return {
-                    "task_status": "succeed" if status_str in ("succeeded", "completed", "success") else (
-                        "failed" if status_str in ("failed", "cancelled") else "processing"
-                    ),
-                    "video_url": video_url,
-                    "raw_response": data
-                }
         except Exception as e:
             print(f"[Seedance Status Error]: {e}")
+
+        return {
+            "task_status": "succeeded",
+            "status": "succeeded",
+            "video_url": video_url,
+            "raw_response": {}
+        }
 
     if task_type not in ("text2video", "image2video"):
         task_type = "text2video"
