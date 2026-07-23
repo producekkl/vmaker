@@ -1279,7 +1279,7 @@ async function generateVideo(prompt) {
         if (!data.task_id) throw new Error('task_id를 받지 못했습니다');
 
         setUIState('generating');
-        document.getElementById('loader-msg').textContent = 'Kling AI가 영상을 생성하고 있습니다 (30~120초)...';
+        document.getElementById('loader-msg').textContent = '영상을 생성하고 있습니다 (30~90초)...';
         startPolling(data.task_type || 'text2video', data.task_id, prompt, model);
     } catch (err) {
         setUIState('failed');
@@ -1294,7 +1294,9 @@ function startPolling(taskType, taskId, prompt, modelName) {
 
     const tickTimer = setInterval(() => {
         elapsed += 2;
-        timerEl.textContent = `경과: ${elapsed}초`;
+        // Calculate estimated progress percentage (target ~60 seconds for completion)
+        const percent = Math.min(98, Math.floor((elapsed / 60) * 100));
+        timerEl.textContent = `진행률: ${percent}% (경과: ${elapsed}초)`;
     }, 2000);
 
     const poll = async () => {

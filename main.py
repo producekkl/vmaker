@@ -323,9 +323,11 @@ def create_video(req: CreateVideoRequest):
                 "image_url": {"url": pub_url}
             })
 
+        sound_on = str(req.sound).lower() in ("on", "true", "1")
         payload = {
             "model": seedance_model,
-            "content": contents
+            "content": contents,
+            "generate_audio": sound_on
         }
 
         try:
