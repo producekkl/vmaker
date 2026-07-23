@@ -1169,10 +1169,19 @@ function updateCostDisplay() {
         else if (val.includes('3.1')) { credits = currentImgRes === '4k' ? '5.2' : currentImgRes === '2k' ? '2.6' : '1.3'; cost = '$0.09'; }
         else if (val.includes('3-pro') || val.includes('pro')) { credits = '5.2'; cost = '$0.24'; }
     } else {
-        if (val.includes('2.5-turbo')) { credits = '28'; cost = '$0.28/5s'; }
-        else if (val.includes('3.0-omni')) { credits = '79'; cost = '$0.79/5s'; }
-        else if (val.includes('3.0')) { credits = '58'; cost = '$0.58/5s'; }
-        else if (val.includes('2.6')) { credits = '45'; cost = '$0.45/5s'; }
+        let baseCredits = 35;
+        let baseCost = 0.35;
+        if (val.includes('2.5-turbo')) { baseCredits = 28; baseCost = 0.28; }
+        else if (val.includes('3.0-omni')) { baseCredits = 79; baseCost = 0.79; }
+        else if (val.includes('3.0')) { baseCredits = 58; baseCost = 0.58; }
+        else if (val.includes('2.6')) { baseCredits = 45; baseCost = 0.45; }
+
+        let multiplier = 1;
+        if (currentVidDur === 10) multiplier *= 2;
+        if (currentVidQuality === 'pro') multiplier *= 2;
+
+        credits = (baseCredits * multiplier).toString();
+        cost = `$${(baseCost * multiplier).toFixed(2)}/${currentVidDur}s`;
     }
     lbl.textContent = `✨ ${credits}`;
     costEl.textContent = `예상 비용: ${cost}`;
@@ -1185,8 +1194,8 @@ function updateRatio(val) {
     currentRatio = val; 
 }
 function updateImgRes(val) { currentImgRes = val; updateCostDisplay(); }
-function updateVidDur(val) { currentVidDur = parseInt(val); }
-function updateVidQuality(val) { currentVidQuality = val; }
+function updateVidDur(val) { currentVidDur = parseInt(val); updateCostDisplay(); }
+function updateVidQuality(val) { currentVidQuality = val; updateCostDisplay(); }
 
 // =====================================================
 // FILE UPLOAD / DRAG DROP
@@ -1684,6 +1693,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -2819,6 +2829,7 @@ checkAuth();
     
 
 })();
+
 
 
 
