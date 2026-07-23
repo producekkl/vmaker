@@ -700,32 +700,67 @@ def nanobanana_generate(req: NanobananaRequest):
     # Translate Korean prompt to English for max prompt adherence
     english_prompt = translate_prompt_to_english(req.prompt)
 
-    parts = []
+    # 1. Process reference/input image for Image Editing & Inpainting
+    image_ref_url = None
+    b64_data = ""
+    mime_type = "image/jpeg"
+
     if req.image and req.image.strip():
         img_str = req.image.strip()
-        mime_type = "image/jpeg"
         if img_str.startswith("data:"):
             try:
                 header, data = img_str.split(";base64,")
                 mime_type = header.replace("data:", "")
-                img_str = data
+                b64_data = data
             except Exception:
                 pass
+        elif img_str.startswith("http://") or img_str.startswith("https://"):
+            image_ref_url = img_str
+            try:
+                img_res = requests.get(img_str, timeout=10)
+                if img_res.status_code == 200:
+                    b64_data = base64.b64encode(img_res.content).decode("utf-8")
+                    c_type = img_res.headers.get("Content-Type", "image/jpeg")
+                    if "png" in c_type: mime_type = "image/png"
+                    elif "webp" in c_type: mime_type = "image/webp"
+                    else: mime_type = "image/jpeg"
+            except Exception as fetch_err:
+                print(f"[NanoBanana Image Fetch Error]: {fetch_err}")
+        elif img_str.startswith("/static/") or img_str.startswith("static/"):
+            rel_path = img_str.lstrip("/")
+            if os.path.exists(rel_path):
+                try:
+                    with open(rel_path, "rb") as f:
+                        b64_data = base64.b64encode(f.read()).decode("utf-8")
+                        if rel_path.endswith(".png"): mime_type = "image/png"
+                        elif rel_path.endswith(".webp"): mime_type = "image/webp"
+                        else: mime_type = "image/jpeg"
+                except Exception as e:
+                    print(f"[NanoBanana Local Read Error]: {e}")
+
+        if not image_ref_url and b64_data:
+            image_ref_url = ensure_public_url(f"data:{mime_type};base64,{b64_data}", "img_ref_input.jpg")
+
+    parts = []
+    if b64_data:
         parts.append({
             "inlineData": {
                 "mimeType": mime_type,
-                "data": img_str
+                "data": b64_data
             }
         })
-    parts.append({"text": english_prompt})
+        edit_instruction = f"Modify and edit the provided input image strictly according to these instructions: {english_prompt}. Keep the main subject and composition intact, only applying the requested modifications."
+        parts.append({"text": edit_instruction})
+    else:
+        parts.append({"text": english_prompt})
 
     headers = {"Content-Type": "application/json"}
 
     if nanobanana_key:
-        models_to_try = ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview", "gemini-2.0-flash"]
+        models_to_try = ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview", "nano-banana-pro-preview", "gemini-2.5-flash-image"]
         m_name = (req.model_name or req.model or "").lower()
         if "3.1" in m_name or "3.0" in m_name or "pro" in m_name:
-            models_to_try = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image", "gemini-3-pro-image-preview"]
+            models_to_try = ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview", "nano-banana-pro-preview", "gemini-2.5-flash-image"]
 
         for target_model in models_to_try:
             url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
@@ -744,11 +779,11 @@ def nanobanana_generate(req: NanobananaRequest):
                         parts_ret = candidates[0].get("content", {}).get("parts", [])
                         for part in parts_ret:
                             if "inlineData" in part:
-                                b64_data = part["inlineData"].get("data", "")
+                                b64_ret = part["inlineData"].get("data", "")
                                 m_type = part["inlineData"].get("mimeType", "image/jpeg")
-                                if b64_data:
-                                    out_image = f"data:{m_type};base64,{b64_data}"
-                                    print(f"[Nanobanana API] ✅ Generated image with {target_model}!")
+                                if b64_ret:
+                                    out_image = f"data:{m_type};base64,{b64_ret}"
+                                    print(f"[Nanobanana API] ✅ Generated/edited image with {target_model}!")
                                     break
             except Exception as e:
                 print(f"[Nanobanana API] Note on {target_model}: {e}")
@@ -756,16 +791,21 @@ def nanobanana_generate(req: NanobananaRequest):
             if out_image:
                 break
 
-    # High-speed FLUX AI Engine fallback if Gemini API is unavailable or times out
+    # High-speed FLUX AI Engine fallback with Image-to-Image / Inpainting editing support!
     if not out_image:
-        print(f"[Nanobanana API] ⚡ Generating high-quality image with FLUX Engine for '{english_prompt}'...")
+        print(f"[Nanobanana API] ⚡ Generating/editing high-quality image with FLUX Engine for '{english_prompt}'...")
         try:
-            import random
-            encoded_prompt = requests.utils.quote(english_prompt)
+            import random, urllib.parse
+            encoded_prompt = urllib.parse.quote(english_prompt)
             w, h = 1280, 720
             if ratio == "9:16": w, h = 720, 1280
             elif ratio == "1:1": w, h = 1024, 1024
-            fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&model=flux&nologo=true&seed={random.randint(1000, 999999)}"
+            
+            if image_ref_url:
+                encoded_img = urllib.parse.quote(image_ref_url)
+                fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?image={encoded_img}&width={w}&height={h}&model=flux&nologo=true&seed={random.randint(1000, 999999)}"
+            else:
+                fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&model=flux&nologo=true&seed={random.randint(1000, 999999)}"
             out_image = fallback_url
         except Exception as fb_err:
             print(f"[Nanobanana API] Fallback error: {fb_err}")

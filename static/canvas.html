@@ -1162,7 +1162,8 @@ function switchMode(name) {
 function populateModels() {
     const sel = document.getElementById('sel-model');
     if (!sel) return;
-    const models = activeMode === 'image' ? imageModels : videoModels;
+    const isImgMode = activeMode === 'image' || activeMode === 'modify';
+    const models = isImgMode ? imageModels : videoModels;
     sel.innerHTML = models.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
     updateCostDisplay();
 }
@@ -1397,9 +1398,9 @@ async function generateImage(prompt) {
 
     try {
         const body = { prompt, aspect_ratio: ratio, model_name: model, mode: resolution };
-        if (activeMode === 'modify' && base64ImageRef) {
+        if (base64ImageRef && base64ImageRef.trim()) {
             body.image = base64ImageRef;
-            showToast('🎨 첨부 이미지 기반 수정 모드로 진행합니다...');
+            showToast('🎨 첨부 이미지 기반 수정/편집 진행 중...');
         } else {
             showToast('🖼️ 신규 이미지 생성 중...');
         }
@@ -1807,6 +1808,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -3102,6 +3104,7 @@ checkAuth();
     
 
 })();
+
 
 
 
