@@ -636,7 +636,10 @@ def nanobanana_generate(req: NanobananaRequest):
     for target_model in models_to_try:
         url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
         gemini_payload = {
-            "contents": [{"parts": parts}]
+            "contents": [{"parts": parts}],
+            "generationConfig": {
+                "responseModalities": ["IMAGE"]
+            }
         }
         try:
             res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=20)
