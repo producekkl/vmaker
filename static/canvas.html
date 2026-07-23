@@ -1759,6 +1759,7 @@ checkAuth();
 
 
 
+
 (() => {
 
 
@@ -2781,6 +2782,68 @@ checkAuth();
 
             const onCanvasDrop = useCallback((e) => {
                 e.preventDefault();
+                e.stopPropagation();
+
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = Math.max(40, e.clientX - rect.left - 100);
+                const y = Math.max(40, e.clientY - rect.top - 50);
+
+                // 1. Local file drop (from computer)
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+                        showToast('⚠️ 이미지 또는 영상 파일만 허용됩니다.');
+                        return;
+                    }
+                    const isVid = file.type.startsWith('video/');
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const dataUrl = ev.target.result;
+                        const id = `n_${Date.now()}`;
+                        if (isVid) {
+                            const newNode = {
+                                id,
+                                type: 'video',
+                                position: { x, y },
+                                data: {
+                                    prompt: file.name,
+                                    videoUrl: dataUrl,
+                                    model: 'kling-v3.0',
+                                    dur: '5',
+                                    status: '완료',
+                                    onChange: onNodeDataChange,
+                                    onRun: onRunSingleNode,
+                                    onPreview: handlePreview
+                                }
+                            };
+                            setNodes((nds) => nds.concat(newNode));
+                            showToast('🎬 비디오 파일이 캔버스에 추가되었습니다!');
+                        } else {
+                            const newNode = {
+                                id,
+                                type: 'image',
+                                position: { x, y },
+                                data: {
+                                    prompt: file.name,
+                                    imageUrl: dataUrl,
+                                    inputImage: dataUrl,
+                                    model: 'gemini-3.1-flash-image-preview',
+                                    res: '1k',
+                                    status: '완료',
+                                    onChange: onNodeDataChange,
+                                    onRun: onRunSingleNode,
+                                    onPreview: handlePreview
+                                }
+                            };
+                            setNodes((nds) => nds.concat(newNode));
+                            showToast('🖼️ 이미지 파일이 캔버스에 추가되었습니다!');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+
+                // 2. History URL drop
                 const droppedUrl = e.dataTransfer.getData('text/plain');
                 const jsonStr = e.dataTransfer.getData('application/json');
                 let itemData = null;
@@ -2794,9 +2857,6 @@ checkAuth();
                 const promptText = itemData?.prompt || '';
 
                 const id = `n_${Date.now()}`;
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = Math.max(40, e.clientX - rect.left - 100);
-                const y = Math.max(40, e.clientY - rect.top - 50);
 
                 if (isVideo) {
                     const newNode = {
@@ -2876,6 +2936,8 @@ checkAuth();
                             onReconnect={onReconnect}
                             onReconnectStart={onReconnectStart}
                             onReconnectEnd={onReconnectEnd}
+                            onDragOver={onCanvasDragOver}
+                            onDrop={onCanvasDrop}
                             nodeTypes={nodeTypes}
                             deleteKeyCode={['Backspace', 'Delete']}
                             fitView
@@ -2959,6 +3021,7 @@ checkAuth();
     
 
 })();
+
 
 
 

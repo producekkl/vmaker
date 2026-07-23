@@ -338,6 +338,9 @@ def create_video(req: CreateVideoRequest):
     if is_image:
         payload["image"] = ensure_public_url(req.image.strip(), "input_image.jpg")
         target_url = f"{kling_base}/v1/videos/image2video"
+        # Kling AI API does NOT support sound for image2video; strip sound key to prevent API error
+        if "sound" in payload:
+            del payload["sound"]
     else:
         target_url = f"{kling_base}/v1/videos/text2video"
 
@@ -351,10 +354,7 @@ def create_video(req: CreateVideoRequest):
     except requests.RequestException as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail={
-                "error": f"Failed to connect to Kling API: {str(e)}",
-                "payload_used": payload
-            }
+            detail={"error": f"Failed to connect to Kling API: {str(e)}", "payload_used": payload}
         )
 
     if response.status_code != 200:
@@ -362,13 +362,17 @@ def create_video(req: CreateVideoRequest):
             err_json = response.json()
         except Exception:
             err_json = {"raw_text": response.text}
+        
+        msg = "Kling API 호출에 실패했습니다."
+        if isinstance(err_json, dict):
+            err_msg = str(err_json.get("message") or err_json.get("error") or "")
+            if "Account balance not enough" in err_msg or err_json.get("code") == 1102:
+                msg = "⚠️ Kling AI 코인(크레딧) 잔액이 부족합니다. Kling 계정 잔액을 충전해주세요."
+            else:
+                msg = f"Kling API 오류: {err_msg}"
         raise HTTPException(
             status_code=response.status_code,
-            detail={
-                "error": f"Kling API returned HTTP status {response.status_code}",
-                "kling_response": err_json,
-                "payload_used": payload
-            }
+            detail=msg
         )
 
     try:
