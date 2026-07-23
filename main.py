@@ -302,7 +302,7 @@ def create_video(req: CreateVideoRequest):
     req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
 
-    # Seedance 2.0 - OpenRouter API Dedicated Integration (https://openrouter.ai)
+    # Seedance 2.0 - OpenRouter Official Video Generation API (https://openrouter.ai/api/v1/videos)
     if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower:
         openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
         if not openrouter_key:
@@ -311,31 +311,25 @@ def create_video(req: CreateVideoRequest):
                 detail="⚠️ OPENROUTER_API_KEY가 설정되어 있지 않습니다. Vercel 환경변수를 확인해주세요."
             )
 
-        or_url = "https://openrouter.ai/api/v1/chat/completions"
+        or_url = "https://openrouter.ai/api/v1/videos"
         or_headers = {
             "Authorization": f"Bearer {openrouter_key}",
             "HTTP-Referer": "https://vmaker.vercel.app",
             "X-Title": "MotionPix",
             "Content-Type": "application/json"
         }
-        target_or_model = os.getenv("OPENROUTER_SEEDANCE_MODEL", "bytedance-seed/seed-2.0-lite")
-
-        messages = [{"role": "user", "content": f"Generate video animation: {translate_prompt_to_english(req.prompt)}"}]
-        if req.image and req.image.strip():
-            pub_img_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
-            messages.append({
-                "role": "user",
-                "content": [{"type": "image_url", "image_url": {"url": pub_img_url}}]
-            })
+        target_or_model = os.getenv("OPENROUTER_SEEDANCE_MODEL", "bytedance/seedance-2.0")
 
         or_payload = {
             "model": target_or_model,
-            "messages": messages
+            "prompt": translate_prompt_to_english(req.prompt)
         }
+        if req.image and req.image.strip():
+            or_payload["image_url"] = ensure_public_url(req.image.strip(), "seedance_input.jpg")
 
         try:
             or_res = requests.post(or_url, json=or_payload, headers=or_headers, timeout=25)
-            if or_res.status_code == 200:
+            if or_res.status_code in (200, 201, 202):
                 or_data = or_res.json()
                 task_id = or_data.get("id") or str(uuid.uuid4())
                 return {
@@ -350,7 +344,7 @@ def create_video(req: CreateVideoRequest):
                     err_msg = err_json.get("error", {}).get("message") or or_res.text
                 except Exception:
                     err_msg = or_res.text
-                raise HTTPException(status_code=or_res.status_code, detail=f"OpenRouter API 오류 ({or_res.status_code}): {err_msg}")
+                raise HTTPException(status_code=or_res.status_code, detail=f"OpenRouter Video API 오류 ({or_res.status_code}): {err_msg}")
         except HTTPException:
             raise
         except Exception as e:
@@ -468,35 +462,33 @@ def create_video(req: CreateVideoRequest):
 @app.get("/api/kling/task/{task_type}/{task_id}")
 def check_status(task_type: str, task_id: str):
     if task_type in ("openrouter", "seedance"):
-        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
-        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
-        headers = {"Authorization": f"Bearer {ark_key}"}
-        video_url = None
-        status_str = "succeeded"
-
-        if task_id and task_id.startswith("gen-"):
-            # OpenRouter task ID format
-            video_url = f"https://image.pollinations.ai/prompt/seedance%20ai%20video%20generation%20result%20{task_id[:12]}?width=1280&height=720&nologo=true"
-        elif ark_key:
+        openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
+        if openrouter_key:
+            or_poll_url = f"https://openrouter.ai/api/v1/videos/{task_id}"
+            or_headers = {"Authorization": f"Bearer {openrouter_key}"}
             try:
-                res = requests.get(f"{ark_base}/contents/generations/tasks/{task_id}", headers=headers, timeout=10)
+                res = requests.get(or_poll_url, headers=or_headers, timeout=10)
                 if res.status_code == 200:
                     data = res.json()
-                    status_str = str(data.get("status") or "").lower()
-                    if status_str in ("succeeded", "completed", "success"):
-                        content = data.get("content", {})
-                        if isinstance(content, dict):
-                            video_url = content.get("video_url") or content.get("url")
+                    st = str(data.get("status") or "").lower()
+                    video_url = data.get("video_url") or data.get("url") or (data.get("output") or {}).get("url")
+                    
+                    is_done = st in ("succeeded", "completed", "success", "done") or bool(video_url)
+                    is_failed = st in ("failed", "error", "cancelled")
+                    
+                    return {
+                        "task_status": "succeeded" if is_done else ("failed" if is_failed else "processing"),
+                        "status": "succeeded" if is_done else ("failed" if is_failed else "processing"),
+                        "video_url": video_url,
+                        "raw_response": data
+                    }
             except Exception as e:
-                print(f"[Seedance Status Error]: {e}")
-
-        if not video_url:
-            video_url = f"https://image.pollinations.ai/prompt/seedance%20ai%20video%20generation%20{task_id[:8] if task_id else 'result'}?width=1280&height=720&nologo=true"
+                print(f"[OpenRouter Video Poll Error]: {e}")
 
         return {
             "task_status": "succeeded",
             "status": "succeeded",
-            "video_url": video_url,
+            "video_url": None,
             "raw_response": {}
         }
 
