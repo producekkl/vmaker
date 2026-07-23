@@ -299,7 +299,6 @@ def health_check():
 
 @app.post("/api/kling/create")
 @app.post("/api/seedance/create")
-@app.post("/api/openrouter/create")
 def create_video(req: CreateVideoRequest):
     req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
@@ -454,7 +453,7 @@ def create_video(req: CreateVideoRequest):
 @app.get("/api/kling/status/{task_type}/{task_id}")
 @app.get("/api/kling/task/{task_type}/{task_id}")
 def check_status(task_type: str, task_id: str):
-    if task_type in ("seedance", "openrouter"):
+    if task_type in ("seedance", "dreamina", "byteplus"):
         ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "") or os.getenv("BYTEPLUS_API_KEY", "")
         ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
         headers = {"Authorization": f"Bearer {ark_key}"}
