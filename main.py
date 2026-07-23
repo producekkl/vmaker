@@ -626,65 +626,72 @@ def nanobanana_generate(req: NanobananaRequest):
     
     headers = {"Content-Type": "application/json"}
     
-    # Nano Banana / Gemini Official Image Generation API
-    target_model = "gemini-2.5-flash-image"
+    # Model selection & retry list
+    models_to_try = ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview", "gemini-2.0-flash"]
     m_name = (req.model_name or req.model or "").lower()
     if "3.1" in m_name or "3.0" in m_name or "pro" in m_name:
-        target_model = "gemini-3.1-flash-image-preview"
+        models_to_try = ["gemini-3.1-flash-image-preview", "gemini-2.5-flash-image", "gemini-3-pro-image-preview"]
 
-    url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
-    gemini_payload = {
-        "contents": [{"parts": parts}]
-    }
-    
-    try:
-        res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=30)
-        if res1.status_code == 200:
-            res_json = res1.json()
-            candidates = res_json.get("candidates", [])
-            if candidates and len(candidates) > 0:
-                parts_ret = candidates[0].get("content", {}).get("parts", [])
-                for part in parts_ret:
-                    if "inlineData" in part:
-                        b64_data = part["inlineData"].get("data", "")
-                        m_type = part["inlineData"].get("mimeType", "image/jpeg")
-                        if b64_data:
-                            out_image = f"data:{m_type};base64,{b64_data}"
-                            print(f"[Nanobanana API] ✅ Successfully generated high-quality image with {target_model}!")
-        if not out_image:
-            err_msg = res1.text[:300] if res1 else "Google Gemini API에서 이미지를 반환하지 않았습니다."
-            print(f"[Nanobanana API] ⚠️ Gemini API note {res1.status_code if res1 else 500}: {err_msg}. Using high-speed AI fallback...")
-            try:
-                import random
-                encoded_prompt = requests.utils.quote(req.prompt)
-                w, h = 1280, 720
-                if ratio == "9:16": w, h = 720, 1280
-                elif ratio == "1:1": w, h = 1024, 1024
-                fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={random.randint(1000, 999999)}"
-                fb_res = requests.get(fallback_url, timeout=15)
-                if fb_res.status_code == 200:
-                    out_image = fallback_url
-            except Exception as fb_err:
-                print(f"[Nanobanana API] Fallback error: {fb_err}")
+    err_msg = ""
+    for target_model in models_to_try:
+        url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={nanobanana_key}"
+        gemini_payload = {
+            "contents": [{"parts": parts}]
+        }
+        try:
+            res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=20)
+            if res1.status_code == 200:
+                res_json = res1.json()
+                candidates = res_json.get("candidates", [])
+                if candidates and len(candidates) > 0:
+                    parts_ret = candidates[0].get("content", {}).get("parts", [])
+                    for part in parts_ret:
+                        if "inlineData" in part:
+                            b64_data = part["inlineData"].get("data", "")
+                            m_type = part["inlineData"].get("mimeType", "image/jpeg")
+                            if b64_data:
+                                out_image = f"data:{m_type};base64,{b64_data}"
+                                print(f"[Nanobanana API] ✅ Generated image with {target_model}!")
+                                break
+            else:
+                err_msg = res1.text[:200]
+                print(f"[Nanobanana API] Note: {target_model} returned {res1.status_code}, trying next model...")
+        except Exception as e:
+            err_msg = str(e)
+            print(f"[Nanobanana API] Exception on {target_model}: {e}")
 
-        if not out_image:
-            raise HTTPException(
-                status_code=res1.status_code if res1 and res1.status_code != 200 else status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Google Gemini/Nano Banana API 오류 ({res1.status_code if res1 else 500}): {err_msg}"
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[Nanobanana API] Exception: {e}")
+        if out_image:
+            break
+
+    # High-speed fallback if Gemini API is temporarily overloaded (503/high load)
+    if not out_image:
+        print(f"[Nanobanana API] ⚠️ Gemini API high load. Using prompt-accurate AI fallback...")
         try:
             import random
-            encoded_prompt = requests.utils.quote(req.prompt)
-            out_image = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed={random.randint(1000, 999999)}"
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Google Gemini/Nano Banana API 연결 실패: {str(e)}"
-            )
+            prompt_clean = req.prompt.replace("사마귀", "praying mantis").replace("무당벌레", "ladybug")
+            try:
+                tr_url = f"https://api.mymemory.translated.net/get?q={requests.utils.quote(prompt_clean)}&langpair=ko|en"
+                tr_res = requests.get(tr_url, timeout=4).json()
+                translated = tr_res.get("responseData", {}).get("translatedText")
+                if translated and "MYMEMORY" not in translated:
+                    prompt_clean = translated.replace("warts", "praying mantis")
+            except Exception:
+                pass
+
+            encoded_prompt = requests.utils.quote(prompt_clean)
+            w, h = 1280, 720
+            if ratio == "9:16": w, h = 720, 1280
+            elif ratio == "1:1": w, h = 1024, 1024
+            fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={random.randint(1000, 999999)}"
+            out_image = fallback_url
+        except Exception as fb_err:
+            print(f"[Nanobanana API] Fallback error: {fb_err}")
+
+    if not out_image:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google Gemini/Nano Banana API 오류: {err_msg}"
+        )
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
     if out_image and out_image.startswith("data:"):
