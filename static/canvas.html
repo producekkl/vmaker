@@ -1110,9 +1110,11 @@ function setMode(mode) {
 
     activeMode = mode;
 
-    // Update nav items
-    document.getElementById('nav-image').classList.toggle('active', mode === 'image');
-    document.getElementById('nav-video').classList.toggle('active', mode === 'video');
+    // Update nav items (removed from HTML, but safely check if they exist)
+    const navImg = document.getElementById('nav-image');
+    const navVid = document.getElementById('nav-video');
+    if (navImg) navImg.classList.toggle('active', mode === 'image');
+    if (navVid) navVid.classList.toggle('active', mode === 'video');
 
     // Update tab buttons
     ['image', 'video', 'avatar', 'modify'].forEach(m => {
@@ -1682,6 +1684,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -2815,6 +2818,7 @@ checkAuth();
     
 
 })();
+
 
 
 
