@@ -1160,6 +1160,96 @@
                 }, 1500);
             };
 
+            // Canvas Project Save & Load Logic
+            const [currentProjectId, setCurrentProjectId] = useState(null);
+            const [projectTitle, setProjectTitle] = useState('새 캔버스 프로젝트');
+            const [showProjectModal, setShowProjectModal] = useState(false);
+            const [projectsList, setProjectsList] = useState([]);
+            
+            const loadProjects = async () => {
+                if (!userId) {
+                    showToast('로그인이 필요합니다.');
+                    return;
+                }
+                try {
+                    const res = await fetch(`/api/canvas/projects?user_id=${userId}`);
+                    if (!res.ok) throw new Error('Failed to fetch projects');
+                    const data = await res.json();
+                    if (data.ok) {
+                        setProjectsList(data.data || []);
+                        setShowProjectModal(true);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('프로젝트 목록을 불러오지 못했습니다.');
+                }
+            };
+
+            const saveProject = async () => {
+                if (!userId) {
+                    showToast('로그인이 필요합니다.');
+                    return;
+                }
+                
+                if (!projectTitle.trim()) {
+                    showToast('프로젝트 제목을 입력해주세요.');
+                    return;
+                }
+                
+                try {
+                    const payload = {
+                        user_id: userId,
+                        project_id: currentProjectId,
+                        title: projectTitle,
+                        nodes: nodes,
+                        edges: edges
+                    };
+                    const res = await fetch('/api/canvas/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error('Save failed');
+                    const data = await res.json();
+                    if (data.ok && data.data) {
+                        setCurrentProjectId(data.data.id);
+                        showToast(`💾 [${data.data.title}] 저장되었습니다.`);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('프로젝트 저장에 실패했습니다.');
+                }
+            };
+            
+            const restoreProject = async (projectId) => {
+                try {
+                    const res = await fetch(`/api/canvas/project/${projectId}`);
+                    if (!res.ok) throw new Error('Failed to load project');
+                    const data = await res.json();
+                    if (data.ok && data.data) {
+                        // Restore node onChange / onRun / onPreview bindings
+                        const restoredNodes = data.data.nodes.map(n => ({
+                            ...n,
+                            data: {
+                                ...n.data,
+                                onChange: onNodeDataChange,
+                                onRun: onRunSingleNode,
+                                onPreview: handlePreview
+                            }
+                        }));
+                        setNodes(restoredNodes);
+                        setEdges(data.data.edges || []);
+                        setCurrentProjectId(data.data.id);
+                        setProjectTitle(data.data.title);
+                        setShowProjectModal(false);
+                        showToast(`📂 [${data.data.title}] 불러오기 완료!`);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('프로젝트를 불러오는데 실패했습니다.');
+                }
+            };
+
             useEffect(() => {
                 loadTemplate();
             }, []);
@@ -1169,12 +1259,26 @@
                     <div className="top-bar">
                         <div className="top-bar-left">
                             <button className="top-bar-back" onClick={() => history.back()}>← 스튜디오</button>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                                <span>MotionPix</span> React Flow 기반 노드 캔버스
+                            <div style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span>MotionPix</span>
+                                <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                                <input 
+                                    type="text" 
+                                    value={projectTitle} 
+                                    onChange={e => setProjectTitle(e.target.value)} 
+                                    style={{ background: 'transparent', border: '1px solid transparent', color: '#f0f0f5', fontSize: '0.9rem', fontWeight: 600, padding: '4px 8px', borderRadius: '4px', outline: 'none', transition: 'border 0.2s', width: '200px' }} 
+                                    onFocus={e => e.target.style.border = '1px solid rgba(255,255,255,0.2)'}
+                                    onBlur={e => e.target.style.border = '1px solid transparent'}
+                                    placeholder="프로젝트 제목 입력..."
+                                />
                             </div>
                         </div>
-                        <div className="rule-badge">
-                            💡 노드/연결선 클릭 후 Delete / Backspace 키로 즉시 삭제 가능
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <button className="tool-btn" onClick={saveProject} style={{ padding: '6px 12px', background: '#f59e0b', color: '#000', width: 'auto' }}>💾 저장</button>
+                            <button className="tool-btn" onClick={loadProjects} style={{ padding: '6px 12px', background: '#3f3f46', width: 'auto' }}>📂 프로젝트 목록</button>
+                            <div className="rule-badge" style={{ marginLeft: '12px' }}>
+                                💡 노드/연결선 클릭 후 Delete / Backspace 키로 즉시 삭제 가능
+                            </div>
                         </div>
                     </div>
 
@@ -1227,6 +1331,30 @@
                                     <button onClick={() => setModalImage(null)} style={{ background: '#3f3f46', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>
                                         닫기 ✕
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Project List Modal */}
+                    {showProjectModal && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowProjectModal(false)}>
+                            <div style={{ width: '400px', background: '#1c1e2a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ margin: 0, color: '#f0f0f5', fontSize: '1.2rem' }}>내 캔버스 프로젝트</h3>
+                                    <button onClick={() => setShowProjectModal(false)} style={{ background: 'transparent', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                                    {projectsList.length === 0 ? (
+                                        <div style={{ padding: '20px', textAlign: 'center', color: '#71717a' }}>저장된 프로젝트가 없습니다.</div>
+                                    ) : (
+                                        projectsList.map(proj => (
+                                            <div key={proj.id} onClick={() => restoreProject(proj.id)} style={{ padding: '12px', background: '#272a38', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'} onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}>
+                                                <span style={{ color: '#e4e4e7', fontWeight: 600 }}>{proj.title}</span>
+                                                <span style={{ color: '#71717a', fontSize: '0.8rem' }}>{new Date(proj.updated_at).toLocaleDateString()}</span>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -248,7 +248,7 @@ async def auth_middleware(request: Request, call_next):
     path = request.url.path
     # Public routes - no auth needed
     public_paths = ("/api/auth/register-profile", "/api/supabase/config", "/health", "/", "/motionpix", "/login", "/api/assets", "/canvas", "/api/workflow/execute", "/api/workflow/node-execute", "/api/download/proxy", "/api/gemini/image", "/api/kling/create", "/api/generations/save")
-    if path in public_paths or path.startswith("/static/") or path.startswith("/features/") or path.startswith("/api/kling/") or path.startswith("/api/gemini/") or path.startswith("/api/nanobanana/"):
+    if path in public_paths or path.startswith("/static/") or path.startswith("/features/") or path.startswith("/api/kling/") or path.startswith("/api/gemini/") or path.startswith("/api/nanobanana/") or path.startswith("/api/canvas/"):
         return await call_next(request)
 
     # Extract Bearer token from Authorization header
@@ -1586,6 +1586,101 @@ def save_generation(req: SaveGenerationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class CanvasProjectSaveRequest(BaseModel):
+    user_id: str
+    project_id: Optional[str] = None
+    title: str
+    nodes: list
+    edges: list
+
+@app.post("/api/canvas/save")
+def save_canvas_project(req: CanvasProjectSaveRequest):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase config missing")
+        
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation"
+    }
+    
+    payload = {
+        "user_id": req.user_id,
+        "title": req.title,
+        "nodes": req.nodes,
+        "edges": req.edges,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    if req.project_id:
+        payload["id"] = req.project_id
+        
+    try:
+        res = requests.post(db_url, json=payload, headers=headers, timeout=10)
+        if res.status_code in (200, 201):
+            data = res.json()
+            return {"status": "success", "project": data[0] if isinstance(data, list) and len(data)>0 else data}
+        else:
+            raise HTTPException(status_code=res.status_code, detail=f"Canvas save failed: {res.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/canvas/projects")
+def list_canvas_projects(user_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase config missing")
+        
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "user_id": f"eq.{user_id}",
+        "select": "id,title,updated_at",
+        "order": "updated_at.desc"
+    }
+    try:
+        res = requests.get(db_url, headers=headers, params=params, timeout=10)
+        if res.status_code == 200:
+            return {"status": "success", "projects": res.json()}
+        else:
+            raise HTTPException(status_code=res.status_code, detail=f"Fetch projects failed: {res.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/canvas/project/{project_id}")
+def get_canvas_project(project_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase config missing")
+        
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "id": f"eq.{project_id}",
+        "select": "id,title,nodes,edges"
+    }
+    try:
+        res = requests.get(db_url, headers=headers, params=params, timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            if data and len(data) > 0:
+                return {"status": "success", "project": data[0]}
+            raise HTTPException(status_code=404, detail="Project not found")
+        else:
+            raise HTTPException(status_code=res.status_code, detail=f"Fetch project failed: {res.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 @app.get("/api/download/proxy")
@@ -1821,6 +1916,114 @@ def get_generations(user_id: str, request: Request):
     except Exception as e:
         print(f"[Supabase DB] Fetch Exception: {e}")
         return {"ok": True, "data": []}
+
+# =====================================================
+# CANVAS PROJECTS API
+# =====================================================
+class CanvasSaveRequest(BaseModel):
+    user_id: str
+    project_id: Optional[str] = None
+    title: str
+    nodes: list = Field(default_factory=list)
+    edges: list = Field(default_factory=list)
+
+@app.post("/api/canvas/save")
+def save_canvas_project(req: CanvasSaveRequest):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing.")
+
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation,resolution=merge-duplicates"
+    }
+
+    payload = {
+        "user_id": req.user_id,
+        "title": req.title,
+        "nodes": req.nodes,
+        "edges": req.edges,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    if req.project_id:
+        payload["id"] = req.project_id
+
+    try:
+        res = requests.post(db_url, json=payload, headers=headers, timeout=20)
+        if res.status_code in (200, 201):
+            inserted_data = res.json()
+            return {"ok": True, "data": inserted_data[0] if isinstance(inserted_data, list) and inserted_data else payload}
+        else:
+            print(f"[Supabase DB] Canvas Save error {res.status_code}: {res.text}")
+            raise HTTPException(status_code=res.status_code, detail="Failed to save canvas project")
+    except Exception as e:
+        print(f"[Supabase DB] Canvas Save Exception: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/canvas/projects")
+def get_canvas_projects(user_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        return {"ok": True, "data": []}
+
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "user_id": f"eq.{user_id}",
+        "select": "id,title,updated_at",
+        "order": "updated_at.desc"
+    }
+
+    try:
+        res = requests.get(db_url, headers=headers, params=params, timeout=15)
+        if res.status_code == 200:
+            return {"ok": True, "data": res.json()}
+        else:
+            print(f"[Supabase DB] Canvas Projects fetch error {res.status_code}: {res.text}")
+            return {"ok": True, "data": []}
+    except Exception as e:
+        print(f"[Supabase DB] Canvas Projects Fetch Exception: {e}")
+        return {"ok": True, "data": []}
+
+
+@app.get("/api/canvas/project/{project_id}")
+def get_canvas_project(project_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing.")
+
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "id": f"eq.{project_id}",
+        "select": "*"
+    }
+
+    try:
+        res = requests.get(db_url, headers=headers, params=params, timeout=15)
+        if res.status_code == 200:
+            data = res.json()
+            if data and len(data) > 0:
+                return {"ok": True, "data": data[0]}
+            else:
+                raise HTTPException(status_code=404, detail="Project not found")
+        else:
+            print(f"[Supabase DB] Canvas Project fetch error {res.status_code}: {res.text}")
+            raise HTTPException(status_code=res.status_code, detail="Failed to fetch canvas project")
+    except Exception as e:
+        print(f"[Supabase DB] Canvas Project Fetch Exception: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Serve SEO landing pages under static/features/
 @app.get("/features/{feature_id}")
