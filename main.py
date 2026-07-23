@@ -298,6 +298,8 @@ def health_check():
 
 
 @app.post("/api/kling/create")
+@app.post("/api/seedance/create")
+@app.post("/api/openrouter/create")
 def create_video(req: CreateVideoRequest):
     req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
@@ -346,6 +348,12 @@ def create_video(req: CreateVideoRequest):
                     err_msg = err_json.get("error", {}).get("message") or or_res.text
                 except Exception:
                     err_msg = or_res.text
+                
+                if or_res.status_code == 402 or "Insufficient credits" in err_msg:
+                    raise HTTPException(
+                        status_code=402,
+                        detail="⚠️ OpenRouter 크레딧 잔액이 부족합니다. OpenRouter 계정(https://openrouter.ai/settings/credits)에 잔액을 충전해 주세요."
+                    )
                 raise HTTPException(status_code=or_res.status_code, detail=f"OpenRouter Video API 오류 ({or_res.status_code}): {err_msg}")
         except HTTPException:
             raise

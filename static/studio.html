@@ -1254,9 +1254,13 @@ async function generateVideo(prompt) {
         };
         if (base64ImageRef) body.image = base64ImageRef;
 
-        showToast('🎬 Kling AI 비디오 생성 요청 중...');
+        const isSeedance = model.includes('seedance') || model.includes('dreamina') || model.includes('byteplus');
+        const apiEndpoint = isSeedance ? '/api/seedance/create' : '/api/kling/create';
+        const engineLabel = isSeedance ? 'Seedance 2.0 (OpenRouter)' : 'Kling AI';
 
-        const res = await fetch('/api/kling/create', {
+        showToast(`🎬 ${engineLabel} 비디오 생성 요청 중...`);
+
+        const res = await fetch(apiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify(body)
