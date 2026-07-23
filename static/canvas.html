@@ -1179,7 +1179,7 @@
                     return;
                 }
                 try {
-                    const res = await fetch(`/api/canvas/projects?user_id=${userId}`);
+                    const res = await fetch(`/api/canvas/projects?user_id=${userId}`, { cache: 'no-store' });
                     if (!res.ok) throw new Error('Failed to fetch projects');
                     const data = await res.json();
                     if (data.ok) {

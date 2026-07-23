@@ -739,7 +739,7 @@ function toggleCanvasAccordion() {
 async function loadCanvasProjectsList() {
     if (!currentSession || !currentSession.user) return;
     try {
-        const res = await fetch(`/api/canvas/projects?user_id=${currentSession.user.id}`);
+        const res = await fetch(`/api/canvas/projects?user_id=${currentSession.user.id}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         const listContainer = document.getElementById('canvas-projects-list');
