@@ -338,9 +338,18 @@ def create_video(req: CreateVideoRequest):
                     "status": "submitted"
                 }
             else:
-                print(f"[Seedance API Error]: {res.text} -> Automatic fallback to Kling AI")
+                err_msg = res.text
+                print(f"[Seedance API Error]: {err_msg}")
+                if "ModelNotOpen" in err_msg:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="⚠️ BytePlus 콘솔에서 Dreamina-Seedance-2.0 모델 서비스가 활성화(Activate)되어 있지 않습니다. console.byteplus.com에서 Activate Model을 완료해주세요."
+                    )
+                raise HTTPException(status_code=res.status_code if res.status_code != 200 else 400, detail=f"Seedance API 오류: {err_msg}")
+        except HTTPException:
+            raise
         except Exception as e:
-            print(f"[Seedance Exception]: {e} -> Automatic fallback to Kling AI")
+            raise HTTPException(status_code=500, detail=f"Seedance API 연동 오류: {str(e)}")
 
     kling_key = os.getenv("KLING_API_KEY", "")
     kling_base = os.getenv("KLING_API_BASE", "https://api-singapore.klingai.com").rstrip("/")
