@@ -239,7 +239,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 2rem);
-            max-width: 860px;
+            max-width: 980px;
             background: rgba(12,12,18,0.97);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 20px;
@@ -536,7 +536,7 @@
                     </select>
 
                     <!-- Settings (Image/Video) -->
-                    <select class="model-select" id="ctrl-ratio" onchange="updateRatio(this.value)" style="width:70px; padding:7px 8px;">
+                    <select class="model-select" id="ctrl-ratio" onchange="updateRatio(this.value)" style="padding:7px 8px;">
                         <option value="16:9">16:9</option>
                         <option value="9:16">9:16</option>
                         <option value="1:1">1:1</option>
@@ -545,24 +545,24 @@
                         <option value="21:9">21:9</option>
                     </select>
                     
-                    <select class="model-select" id="ctrl-img-res" onchange="updateImgRes(this.value)" style="width:65px; padding:7px 8px;">
+                    <select class="model-select" id="ctrl-img-res" onchange="updateImgRes(this.value)" style="padding:7px 8px;">
                         <option value="1.5k">1.5K</option>
                         <option value="2k" selected>2K</option>
                         <option value="4k">4K</option>
                     </select>
 
-                    <select class="model-select" id="ctrl-vid-dur" onchange="updateVidDur(this.value)" style="display:none; width:65px; padding:7px 8px;">
+                    <select class="model-select" id="ctrl-vid-dur" onchange="updateVidDur(this.value)" style="display:none; padding:7px 8px;">
                         <option value="5" selected>5초</option>
                         <option value="10">10초</option>
                     </select>
 
-                    <select class="model-select" id="ctrl-vid-quality" onchange="updateVidQuality(this.value)" style="display:none; width:90px; padding:7px 8px;">
+                    <select class="model-select" id="ctrl-vid-quality" onchange="updateVidQuality(this.value)" style="display:none; padding:7px 8px;">
                         <option value="std" selected>Standard</option>
                         <option value="pro">Pro (HD)</option>
                     </select>
 
-                    <div id="ctrl-vid-audio-row" style="display:none; align-items:center; gap:6px; margin-left:4px; padding:0 4px;">
-                        <span style="color:var(--muted);font-size:0.7rem;font-weight:600;">AI 오디오</span>
+                    <div id="ctrl-vid-audio-row" style="display:none; align-items:center; gap:6px; margin-left:8px; padding:0 4px; white-space:nowrap;">
+                        <span style="color:var(--muted);font-size:0.75rem;font-weight:600; white-space:nowrap;">AI 오디오</span>
                         <label class="mini-toggle">
                             <input type="checkbox" id="ctrl-audio">
                             <span class="mini-slider"></span>
