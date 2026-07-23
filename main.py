@@ -85,10 +85,18 @@ def ensure_public_url(data_or_url: str, default_filename: str) -> str:
     if supabase_url and supabase_key:
         try:
             storage_path = f"inputs/{uuid.uuid4().hex[:12]}_{filename}"
-            mime_type = f"image/{detected_ext}" if detected_ext in ("jpg", "jpeg", "png", "webp") else "application/octet-stream"
+            
+            if detected_ext == "jpg":
+                mime_type = "image/jpeg"
+            elif detected_ext in ("jpeg", "png", "webp", "gif"):
+                mime_type = f"image/{detected_ext}"
+            else:
+                mime_type = "application/octet-stream"
+
+            print(f"[Storage] Uploading '{storage_path}' with Content-Type: {mime_type}")
             pub_url = upload_to_supabase_storage(file_bytes, storage_path, mime_type)
             if pub_url:
-                print(f"[Supabase Storage] ✅ Uploaded file to: {pub_url}")
+                print(f"[Supabase Storage] ✅ Uploaded file to (Public URL): {pub_url}")
                 return pub_url
         except Exception as sup_err:
             print(f"[Supabase Storage] Upload error: {sup_err}")
@@ -1409,6 +1417,14 @@ async def execute_single_node(req: SingleNodeExecReq):
             video_url = None
             if KLING_API_KEY:
                 task_type = "image2video" if has_image else "text2video"
+                
+                # Final check before calling Kling
+                if task_type == "image2video" and (not img_src or not img_src.startswith("http")):
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"유효한 퍼블릭 이미지 URL이 아닙니다: {img_src}"
+                    )
+                
                 try:
                     kv_req = CreateVideoRequest(
                         prompt=full_prompt,
