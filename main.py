@@ -304,61 +304,52 @@ def create_video(req: CreateVideoRequest):
     req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
 
-    # Seedance 2.0 - OpenRouter Official Video Generation API (https://openrouter.ai/api/v1/videos)
+    # Seedance 2.0 - BytePlus Ark Official API Integration
     if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower:
-        openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
-        if not openrouter_key:
-            raise HTTPException(
-                status_code=400,
-                detail="⚠️ OPENROUTER_API_KEY가 설정되어 있지 않습니다. Vercel 환경변수를 확인해주세요."
-            )
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "") or os.getenv("BYTEPLUS_API_KEY", "")
+        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
+        seedance_model = os.getenv("BYTEPLUS_SEEDANCE_MODEL", "dreamina-seedance-2-0-260128")
 
-        or_url = "https://openrouter.ai/api/v1/videos"
-        or_headers = {
-            "Authorization": f"Bearer {openrouter_key}",
-            "HTTP-Referer": "https://vmaker.vercel.app",
-            "X-Title": "MotionPix",
-            "Content-Type": "application/json"
+        target_url = f"{ark_base}/contents/generations/tasks"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {ark_key}"
         }
-        target_or_model = os.getenv("OPENROUTER_SEEDANCE_MODEL", "bytedance/seedance-2.0")
 
-        or_payload = {
-            "model": target_or_model,
-            "prompt": translate_prompt_to_english(req.prompt)
-        }
+        contents = [{"type": "text", "text": translate_prompt_to_english(req.prompt)}]
         if req.image and req.image.strip():
             pub_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
-            or_payload["image_url"] = pub_url
-            or_payload["image"] = pub_url
+            contents.append({
+                "type": "image_url",
+                "image_url": {"url": pub_url}
+            })
+
+        payload = {
+            "model": seedance_model,
+            "content": contents
+        }
 
         try:
-            or_res = requests.post(or_url, json=or_payload, headers=or_headers, timeout=25)
-            if or_res.status_code in (200, 201, 202):
-                or_data = or_res.json()
-                task_id = or_data.get("id") or str(uuid.uuid4())
+            res = requests.post(target_url, json=payload, headers=headers, timeout=25)
+            res_data = res.json() if res.status_code in (200, 201) else {}
+            if res.status_code in (200, 201) and ("id" in res_data or "task_id" in res_data):
+                task_id = res_data.get("id") or res_data.get("task_id")
                 return {
                     "task_id": task_id,
-                    "task_type": "openrouter",
-                    "status": "submitted",
-                    "openrouter_response": or_data
+                    "task_type": "seedance",
+                    "status": "submitted"
                 }
             else:
                 try:
-                    err_json = or_res.json()
-                    err_msg = err_json.get("error", {}).get("message") or or_res.text
+                    err_json = res.json()
+                    err_msg = err_json.get("error", {}).get("message") or res.text
                 except Exception:
-                    err_msg = or_res.text
-                
-                if or_res.status_code == 402 or "Insufficient credits" in err_msg:
-                    raise HTTPException(
-                        status_code=402,
-                        detail="⚠️ OpenRouter 크레딧 잔액이 부족합니다. OpenRouter 계정(https://openrouter.ai/settings/credits)에 잔액을 충전해 주세요."
-                    )
-                raise HTTPException(status_code=or_res.status_code, detail=f"OpenRouter Video API 오류 ({or_res.status_code}): {err_msg}")
+                    err_msg = res.text
+                raise HTTPException(status_code=res.status_code, detail=f"BytePlus Ark API 오류 ({res.status_code}): {err_msg}")
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"OpenRouter Seedance 2.0 연동 오류: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"BytePlus Seedance 2.0 연동 실패: {str(e)}")
 
     kling_key = os.getenv("KLING_API_KEY", "")
     kling_base = os.getenv("KLING_API_BASE", "https://api-singapore.klingai.com").rstrip("/")
@@ -436,11 +427,7 @@ def create_video(req: CreateVideoRequest):
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail={
-                "error": "Failed to parse JSON response from Kling API",
-                "raw_text": response.text,
-                "payload_used": payload
-            }
+            detail={"error": "Failed to parse JSON response from Kling API", "raw_text": response.text}
         )
 
     # Extract task_id from response
@@ -454,11 +441,7 @@ def create_video(req: CreateVideoRequest):
     if not task_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error": "Kling response did not contain task_id",
-                "kling_response": res_json,
-                "payload_used": payload
-            }
+            detail={"error": "Kling response did not contain task_id", "kling_response": res_json}
         )
 
     return {
@@ -471,34 +454,43 @@ def create_video(req: CreateVideoRequest):
 @app.get("/api/kling/status/{task_type}/{task_id}")
 @app.get("/api/kling/task/{task_type}/{task_id}")
 def check_status(task_type: str, task_id: str):
-    if task_type in ("openrouter", "seedance"):
-        openrouter_key = os.getenv("OPENROUTER_API_KEY", "")
-        if openrouter_key:
-            or_poll_url = f"https://openrouter.ai/api/v1/videos/{task_id}"
-            or_headers = {"Authorization": f"Bearer {openrouter_key}"}
-            try:
-                res = requests.get(or_poll_url, headers=or_headers, timeout=10)
-                if res.status_code == 200:
-                    data = res.json()
-                    st = str(data.get("status") or "").lower()
-                    video_url = data.get("video_url") or data.get("url") or (data.get("output") or {}).get("url")
-                    
-                    is_done = st in ("succeeded", "completed", "success", "done") or bool(video_url)
-                    is_failed = st in ("failed", "error", "cancelled")
-                    
-                    return {
-                        "task_status": "succeeded" if is_done else ("failed" if is_failed else "processing"),
-                        "status": "succeeded" if is_done else ("failed" if is_failed else "processing"),
-                        "video_url": video_url,
-                        "raw_response": data
-                    }
-            except Exception as e:
-                print(f"[OpenRouter Video Poll Error]: {e}")
+    if task_type in ("seedance", "openrouter"):
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "") or os.getenv("BYTEPLUS_API_KEY", "")
+        ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
+        headers = {"Authorization": f"Bearer {ark_key}"}
+        video_url = None
+        task_status = "processing"
+        
+        try:
+            res = requests.get(f"{ark_base}/contents/generations/tasks/{task_id}", headers=headers, timeout=15)
+            if res.status_code == 200:
+                data = res.json()
+                st = str(data.get("status") or "").lower()
+                if st in ("succeeded", "completed", "success"):
+                    task_status = "succeeded"
+                    content = data.get("content", {})
+                    if isinstance(content, dict):
+                        video_url = content.get("video_url") or content.get("url")
+                    elif isinstance(content, list) and len(content) > 0:
+                        video_url = content[0].get("video_url") or content[0].get("url")
+                elif st in ("failed", "error", "cancelled"):
+                    task_status = "failed"
+                else:
+                    task_status = "processing"
+                
+                return {
+                    "task_status": task_status,
+                    "status": task_status,
+                    "video_url": video_url,
+                    "raw_response": data
+                }
+        except Exception as e:
+            print(f"[BytePlus Seedance Poll Error]: {e}")
 
         return {
-            "task_status": "succeeded",
-            "status": "succeeded",
-            "video_url": None,
+            "task_status": task_status,
+            "status": task_status,
+            "video_url": video_url,
             "raw_response": {}
         }
 
