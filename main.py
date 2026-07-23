@@ -299,12 +299,12 @@ def health_check():
 
 @app.post("/api/kling/create")
 def create_video(req: CreateVideoRequest):
-    req_m = req.model_name or ""
+    req_m = req.model_name or "dreamina-seedance-2-0"
     m_lower = req_m.lower()
 
-    # BytePlus Seedance 2.0 API integration
-    if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower:
-        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "")
+    # BytePlus / OpenRouter Seedance 2.0 API integration (Primary Video Engine)
+    if "seedance" in m_lower or "byteplus" in m_lower or "dreamina" in m_lower or "seed" in m_lower or not req.model_name or "kling" not in m_lower:
+        ark_key = os.getenv("BYTEPLUS_ARK_API_KEY", "") or os.getenv("OPENROUTER_API_KEY", "")
         ark_base = os.getenv("BYTEPLUS_ARK_BASE_URL", "https://ark.ap-southeast.bytepluses.com/api/v3").rstrip("/")
         seedance_model = os.getenv("BYTEPLUS_SEEDANCE_MODEL", "dreamina-seedance-2-0-260128")
 
