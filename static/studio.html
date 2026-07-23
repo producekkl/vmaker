@@ -1188,10 +1188,13 @@ async function generateImage(prompt) {
         currentDownloadUrl = imgSrc;
         document.getElementById('action-bar').style.display = 'flex';
 
+        // Save generated image as reference for VIDEO mode (Image-to-Video)
+        setImageRef(imgSrc);
+        
         // Add to gallery & save to Supabase Storage/DB
         addToGallery('image', imgSrc, prompt, model);
         setUIState('success');
-        showToast('✅ 이미지 생성 완료!');
+        showToast('✅ 이미지 생성 완료! (VIDEO 탭으로 전환 시 이 이미지로 영상이 생성됩니다)');
     } catch (err) {
         document.getElementById('preview-loader').style.display = 'none';
         setUIState('failed');
@@ -1425,6 +1428,8 @@ function previewGalleryItem(idx) {
     } else {
         imgEl.src = item.src;
         imgEl.style.display = 'block';
+        // Auto set as reference image for VIDEO tab (Image-to-Video)
+        setImageRef(item.src);
     }
     document.getElementById('preview-box').classList.add('has-content');
     document.getElementById('preview-placeholder').style.display = 'none';
