@@ -1,8 +1,6 @@
 import re
 
-# We will use git to get the pure standalone canvas.html before my breakages
-import subprocess
-subprocess.run(["git", "checkout", "4e17c52", "--", "static/canvas.html"])
+# We don't checkout old commits anymore to preserve recent changes
 
 with open('c:/anti/2/static/studio.html', 'r', encoding='utf-8') as f:
     studio_html = f.read()
@@ -64,6 +62,10 @@ canvas_style = re.sub(r'\.tool-btn\s*{.*?(?=\/\* Custom)', tool_btn_css, canvas_
 babel_match = re.search(r'<script type="text/babel">(.*?)</script>', canvas_html, re.DOTALL)
 babel_script = babel_match.group(1) if babel_match else ""
 
+# Ensure babel script is wrapped in IIFE to prevent variable collision with global JS
+if not babel_script.strip().startswith('(() => {'):
+    babel_script = "(() => {\n" + babel_script + "\n})();"
+
 deps = """
     <!-- React & ReactDOM (Production) CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -100,6 +102,10 @@ new_html = new_html.replace('</body>', f'<script type="text/babel">\n{babel_scri
 # Swap the "active" nav link in the header
 new_html = new_html.replace('<a href="/motionpix" class="nav-link active">Create</a>', '<a href="/motionpix" class="nav-link">Create</a>')
 new_html = new_html.replace('<a href="/canvas" class="nav-link">Canvas</a>', '<a href="/canvas" class="nav-link active">Canvas</a>')
+
+# Swap the "active" class on the left sidebar
+new_html = new_html.replace('<div class="nav-item active" id="nav-studio"', '<div class="nav-item" id="nav-studio"')
+new_html = new_html.replace('<div class="nav-item" id="nav-canvas"', '<div class="nav-item active" id="nav-canvas"')
 
 # To prevent Vanilla JS errors from missing DOM elements in the center panel, we can safely wrap them or just ignore them since they only trigger on user actions inside the center panel which no longer exists.
 # `loadGallery`, `loadCanvasProjectsList`, `deleteProject` do NOT depend on `.center-panel` DOM elements! They will work perfectly!

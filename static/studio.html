@@ -745,6 +745,10 @@ async function checkAuth() {
 
 let isStudioAccordionOpen = true;
 function toggleStudioAccordion() {
+    if (window.location.pathname.includes('/canvas')) {
+        window.location.href = '/motionpix';
+        return;
+    }
     isStudioAccordionOpen = !isStudioAccordionOpen;
     const list = document.getElementById('studio-submenu');
     const icon = document.getElementById('studio-acc-icon');
@@ -759,15 +763,20 @@ function toggleStudioAccordion() {
 
 let isCanvasAccordionOpen = false;
 function toggleCanvasAccordion() {
+    if (!window.location.pathname.includes('/canvas')) {
+        window.location.href = '/canvas';
+        return;
+    }
+    isCanvasAccordionOpen = !isCanvasAccordionOpen;
     const list = document.getElementById('canvas-projects-list');
     const icon = document.getElementById('canvas-acc-icon');
-    if (list.style.display === 'none') {
+    if (isCanvasAccordionOpen) {
         list.style.display = 'flex';
-        if (icon) icon.style.transform = 'rotate(180deg)';
+        icon.style.transform = 'rotate(180deg)';
         loadCanvasProjectsList();
     } else {
         list.style.display = 'none';
-        if (icon) icon.style.transform = 'rotate(0deg)';
+        icon.style.transform = 'rotate(0deg)';
     }
 }
 
@@ -825,16 +834,18 @@ async function loadCanvasProjectsList() {
                 });
             }
             
-            const newBtn = document.createElement('div');
-            newBtn.className = 'nav-item';
-            newBtn.style.fontSize = '0.75rem';
-            newBtn.style.padding = '0.4rem 0.6rem';
-            newBtn.style.color = 'var(--text)';
-            newBtn.style.justifyContent = 'center';
-            newBtn.style.background = 'rgba(255,255,255,0.05)';
-            newBtn.innerHTML = '+ 새 캔버스 저장';
-            newBtn.onclick = () => window.location.href = '/canvas';
-            listContainer.appendChild(newBtn);
+            if (projects.length < 3) {
+                const newBtn = document.createElement('div');
+                newBtn.className = 'nav-item';
+                newBtn.style.fontSize = '0.75rem';
+                newBtn.style.padding = '0.4rem 0.6rem';
+                newBtn.style.color = 'var(--text)';
+                newBtn.style.justifyContent = 'center';
+                newBtn.style.background = 'rgba(255,255,255,0.05)';
+                newBtn.innerHTML = '+ 새 캔버스 저장';
+                newBtn.onclick = () => window.location.href = '/canvas';
+                listContainer.appendChild(newBtn);
+            }
         }
     } catch(e) { console.error('Failed to load canvas projects', e); }
 }
