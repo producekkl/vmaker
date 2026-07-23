@@ -1305,13 +1305,20 @@
             };
 
             useEffect(() => {
-                if (window.supabaseClient) {
-                    window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                const checkAuth = async () => {
+                    let attempts = 0;
+                    while (!supabaseClient && attempts < 20) {
+                        await new Promise(r => setTimeout(r, 100));
+                        attempts++;
+                    }
+                    if (supabaseClient) {
+                        const { data: { session } } = await supabaseClient.auth.getSession();
                         if (session && session.user) {
                             setUserId(session.user.id);
                         }
-                    });
-                }
+                    }
+                };
+                checkAuth();
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const projectId = urlParams.get('project_id');
