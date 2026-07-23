@@ -1,46 +1,426 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MotionPix React Flow Canvas Builder</title>
+    <title>MotionPix Studio - AI 사진 &amp; 영상 생성</title>
+    <meta name="description" content="MotionPix AI Studio - 최고 수준의 AI 이미지 및 영상 생성 도구">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #060609;
+            --surface: rgba(14,14,20,0.9);
+            --surface2: rgba(20,20,30,0.95);
+            --border: rgba(255,255,255,0.06);
+            --border2: rgba(255,255,255,0.12);
+            --accent: #8b5cf6;
+            --accent2: #ec4899;
+            --amber: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #f0f0f5;
+            --muted: #6b7280;
+            --font-ui: 'Inter', sans-serif;
+            --font-display: 'Outfit', sans-serif;
+            --nav-w: 220px;
+            --gallery-w: 300px;
+            --header-h: 52px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(236,72,153,0.06) 0%, transparent 60%);
+            color: var(--text);
+            font-family: var(--font-ui);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========================= AUTH LOADING ========================= */
+        #auth-loading {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+            transition: opacity 0.4s;
+        }
+        #auth-loading .al-logo {
+            font-family: var(--font-display); font-size: 2.2rem; font-weight: 900;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        #auth-loading .al-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(139,92,246,0.15); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ========================= HEADER ========================= */
+        header {
+            height: var(--header-h);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 1.2rem; gap: 1.5rem;
+            flex-shrink: 0; background: rgba(6,6,9,0.95); backdrop-filter: blur(24px); z-index: 200;
+        }
+        .logo {
+            font-family: var(--font-display); font-weight: 900; font-size: 1.3rem;
+            background: linear-gradient(135deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;
+        }
+        .logo-dot { width: 7px; height: 7px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+        nav { display: flex; align-items: center; gap: 0.15rem; }
+        .nav-link { color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; padding: 0.35rem 0.7rem; border-radius: 7px; transition: all 0.2s; }
+        .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+        .nav-link.active { color: var(--text); font-weight: 700; }
+        .header-right { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
+        .status-badge { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border: 1px solid var(--border); border-radius: 20px; font-size: 0.75rem; color: var(--muted); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: all 0.3s; }
+        .status-dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-dot.error { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+        .btn-logout { background: none; border: 1px solid var(--border2); color: var(--muted); padding: 0.3rem 0.8rem; border-radius: 7px; cursor: pointer; font-size: 0.78rem; font-family: var(--font-ui); transition: all 0.2s; display: none; }
+        .btn-logout:hover { color: var(--text); border-color: var(--accent); }
+
+        /* ========================= MAIN 3-COLUMN LAYOUT ========================= */
+        .app-body {
+            display: grid;
+            grid-template-columns: var(--nav-w) 1fr var(--gallery-w);
+            grid-template-rows: 1fr;
+            flex: 1;
+            overflow: hidden;
+            height: calc(100vh - var(--header-h));
+        }
+
+        /* ========================= LEFT NAV PANEL ========================= */
+        .left-panel {
+            border-right: 1px solid var(--border);
+            background: rgba(8,8,14,0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .left-panel-top {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0.75rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        .left-panel-top::-webkit-scrollbar { width: 4px; }
+        .left-panel-top::-webkit-scrollbar-track { background: transparent; }
+        .left-panel-top::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* Nav sections */
+        .nav-section { margin-bottom: 1.5rem; }
+        .nav-section-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0 0.5rem; margin-bottom: 0.4rem; }
+        .nav-item {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.5rem 0.6rem; border-radius: 9px; cursor: pointer;
+            font-size: 0.82rem; font-weight: 500; color: var(--muted);
+            transition: all 0.18s; border: 1px solid transparent; margin-bottom: 2px;
+        }
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+        .nav-item.active { color: #c4b5fd; background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.2); font-weight: 600; }
+        .nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
+        .nav-item .nav-badge { margin-left: auto; background: rgba(139,92,246,0.2); color: #c4b5fd; font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+
+        /* Settings panel at bottom of left nav */
+        .left-panel-settings {
+            border-top: 1px solid var(--border);
+            padding: 0.75rem;
+            flex-shrink: 0;
+        }
+        .settings-header { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.6rem; padding: 0 0.3rem; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.5rem; border-radius: 8px; }
+        .setting-row:hover { background: rgba(255,255,255,0.03); }
+        .setting-label { font-size: 0.77rem; color: var(--muted); }
+        .setting-val { font-size: 0.77rem; color: var(--text); font-weight: 600; }
+        .setting-select {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px; color: var(--text); padding: 0.25rem 0.5rem;
+            font-size: 0.75rem; font-family: var(--font-ui); cursor: pointer; outline: none; max-width: 110px;
+        }
+        .setting-select option { background: #0d0d14; }
+
+        /* Toggle */
+        .mini-toggle { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
+        .mini-toggle input { opacity: 0; width: 0; height: 0; }
+        .mini-slider { position: absolute; cursor: pointer; inset: 0; background: #27272a; border-radius: 18px; transition: .25s; }
+        .mini-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .25s; }
+        .mini-toggle input:checked + .mini-slider { background: var(--amber); }
+        .mini-toggle input:checked + .mini-slider:before { transform: translateX(16px); }
+
+        .user-pill {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.5rem 0.5rem; border-radius: 8px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .user-pill:hover { background: rgba(255,255,255,0.04); }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: white; flex-shrink: 0; }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name { font-size: 0.78rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-plan { font-size: 0.65rem; color: var(--muted); }
+
+        /* ========================= CENTER GENERATION AREA ========================= */
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Preview output */
+        .preview-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            padding-bottom: 180px;
+            overflow: hidden;
+            position: relative;
+        }
+        .preview-box {
+            position: relative;
+            width: 100%;
+            max-width: 820px;
+            height: 100%;
+            max-height: calc(100vh - var(--header-h) - 220px);
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(10,10,16,0.6);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.3s;
+        }
+        .preview-box.has-content { border-color: rgba(139,92,246,0.3); }
+        .preview-box.drag-active { border-color: #9333ea !important; box-shadow: 0 0 0 2px rgba(147,51,234,0.3), inset 0 0 60px rgba(147,51,234,0.08); }
+        .preview-box { cursor: default; }
+        .preview-placeholder {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1rem; color: var(--muted); text-align: center; padding: 2rem;
+        }
+        .preview-placeholder svg { width: 52px; height: 52px; opacity: 0.25; }
+        .preview-placeholder p { font-size: 0.88rem; opacity: 0.5; }
+        #preview-img { display: none; width: 100%; height: 100%; object-fit: contain; border-radius: 14px; }
+        #preview-video { display: none; width: 100%; height: 100%; object-fit: contain; border-radius: 14px; }
+        #preview-loader {
+            display: none; position: absolute; inset: 0;
+            background: rgba(6,6,9,0.85); border-radius: 14px;
+            flex-direction: column; align-items: center; justify-content: center; gap: 1rem; z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+        #preview-loader .loader-ring { width: 44px; height: 44px; border: 3px solid rgba(139,92,246,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        #preview-loader p { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+        #preview-loader .timer { font-size: 0.78rem; color: var(--muted); }
+
+        /* Action bar overlay on preview */
+        #action-bar {
+            display: none; position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+            gap: 0.6rem; background: rgba(6,6,9,0.9); border: 1px solid var(--border2);
+            border-radius: 10px; padding: 0.4rem 0.9rem; backdrop-filter: blur(20px); z-index: 20;
+        }
+        #action-bar a { color: #a78bfa; text-decoration: none; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; transition: color 0.2s; }
+        #action-bar a:hover { color: var(--text); }
+
+        /* ========================= BOTTOM CONTROL BAR ========================= */
+        .ctrl-bar {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem);
+            max-width: 860px;
+            background: rgba(12,12,18,0.97);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 14px 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+            backdrop-filter: blur(30px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Top row of ctrl-bar */
+        .ctrl-top-row { display: flex; align-items: center; justify-content: space-between; }
+        .ctrl-left-tools { display: flex; align-items: center; gap: 8px; }
+
+        .model-select {
+            background: #111118; border: 1px solid rgba(255,255,255,0.1); color: #fff;
+            padding: 7px 12px; border-radius: 18px; font-size: 0.83rem; font-weight: 600;
+            cursor: pointer; outline: none; max-width: 240px;
+            font-family: var(--font-ui);
+        }
+        .model-select option { background: #0d0d14; }
+
+        .opt-btn {
+            background: #111118; border: 1px solid rgba(255,255,255,0.1); color: var(--amber);
+            padding: 7px 12px; border-radius: 18px; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: var(--font-ui);
+            transition: all 0.18s;
+        }
+        .opt-btn:hover { border-color: var(--amber); }
+
+        /* Mode tabs */
+        .mode-tabs { display: flex; gap: 2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 2px; }
+        .mode-tab { padding: 5px 13px; border-radius: 8px; border: none; background: transparent; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; transition: all 0.18s; font-family: var(--font-ui); text-transform: uppercase; }
+        .mode-tab:hover { color: var(--text); }
+        .mode-tab.active { background: rgba(139,92,246,0.2); color: #d8b4fe; border: 1px solid rgba(139,92,246,0.3); }
+
+        /* Main input row */
+        .ctrl-input-row { display: flex; align-items: center; gap: 8px; }
+
+        /* Upload slot */
+        .upload-slot {
+            width: 42px; height: 42px; flex-shrink: 0;
+            border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.18s; position: relative; overflow: hidden; font-size: 0.6rem; flex-direction: column; gap: 2px;
+        }
+        .upload-slot:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+        .upload-slot.has-img { border-color: rgba(139,92,246,0.5); }
+        .upload-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+        .upload-slot svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+        /* Prompt input */
+        .prompt-input {
+            flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; padding: 0.7rem 1rem; color: var(--text); font-size: 0.88rem;
+            font-family: var(--font-ui); outline: none; transition: border-color 0.2s; resize: none; height: 42px;
+        }
+        .prompt-input::placeholder { color: var(--muted); }
+        .prompt-input:focus { border-color: rgba(139,92,246,0.5); }
+
+        /* Generate button */
+        .gen-btn {
+            flex-shrink: 0; padding: 0 1.5rem; height: 42px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none; border-radius: 12px; color: white; font-size: 0.88rem; font-weight: 800;
+            font-family: var(--font-display); cursor: pointer;
+            box-shadow: 0 4px 20px rgba(139,92,246,0.35); transition: all 0.22s; white-space: nowrap;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,92,246,0.5); }
+        .gen-btn:active { transform: translateY(0); }
+        .gen-btn:disabled { background: #1e1e2e; color: #555; box-shadow: none; cursor: not-allowed; transform: none; }
+        .gen-credit { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; }
+
+        /* Status row */
+        .ctrl-status-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--muted); }
+
+        /* ========================= RIGHT GALLERY PANEL ========================= */
+        .right-panel {
+            border-left: 1px solid var(--border);
+            background: rgba(8,8,14,0.9);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .gallery-header {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .gallery-title { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+        .gallery-tabs { display: flex; gap: 2px; }
+        .gallery-tab { padding: 3px 9px; border-radius: 6px; border: none; background: transparent; color: var(--muted); font-size: 0.7rem; font-weight: 600; cursor: pointer; font-family: var(--font-ui); transition: all 0.18s; }
+        .gallery-tab.active { background: rgba(255,255,255,0.08); color: var(--text); }
+
+        .gallery-grid {
+            flex: 1; overflow-y: auto; padding: 0.75rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+            align-content: start;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        .gallery-grid::-webkit-scrollbar { width: 4px; }
+        .gallery-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        .gallery-item {
+            border-radius: 10px; overflow: hidden; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            transition: all 0.2s; aspect-ratio: 16/10; position: relative;
+        }
+        .gallery-item:hover { border-color: rgba(139,92,246,0.4); transform: scale(1.02); }
+        .gallery-item img, .gallery-item video { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-item .item-overlay {
+            position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%);
+            opacity: 0; transition: opacity 0.2s; display: flex; align-items: flex-end; padding: 6px;
+        }
+        .gallery-item:hover .item-overlay { opacity: 1; }
+        .item-type-badge { font-size: 0.6rem; font-weight: 700; background: rgba(0,0,0,0.6); color: white; border-radius: 4px; padding: 2px 6px; text-transform: uppercase; }
+        .item-dl-btn { margin-left: auto; width: 22px; height: 22px; background: rgba(255,255,255,0.15); border-radius: 5px; display: flex; align-items: center; justify-content: center; transition: background 0.18s; }
+        .item-dl-btn:hover { background: rgba(255,255,255,0.3); }
+        .item-dl-btn svg { width: 11px; height: 11px; stroke: white; fill: none; stroke-width: 2.5; }
+
+        .gallery-empty {
+            grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 0.75rem; color: var(--muted); padding: 2rem 1rem; text-align: center;
+        }
+        .gallery-empty svg { width: 36px; height: 36px; opacity: 0.25; }
+        .gallery-empty p { font-size: 0.78rem; opacity: 0.5; }
+
+        /* ========================= OPTION MODAL ========================= */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+        .modal-backdrop.open { display: flex; }
+        .modal-box { background: #0e0e15; border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; width: 460px; max-width: 92vw; padding: 24px; color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,0.9); }
+        .modal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 1rem; font-weight: 700; }
+        .modal-close { cursor: pointer; color: var(--muted); font-size: 1.2rem; transition: color 0.18s; }
+        .modal-close:hover { color: var(--text); }
+        .opt-group { margin-bottom: 18px; }
+        .opt-group-title { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; font-weight: 600; }
+        .grid-btns { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 7px; }
+        .grid-btn { background: #1a1a22; border: 1px solid rgba(255,255,255,0.08); color: #e4e4e7; padding: 9px 4px; border-radius: 9px; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.18s; }
+        .grid-btn:hover { border-color: var(--amber); }
+        .grid-btn.active { background: var(--amber); color: #000; font-weight: 800; border-color: var(--amber); box-shadow: 0 0 14px rgba(245,158,11,0.35); }
+
+        /* ========================= DRAG DROP ========================= */
+        .drag-overlay {
+            position: fixed; inset: 0; background: rgba(13,15,23,0.94); border: 2px dashed #9333ea;
+            z-index: 999; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;
+            backdrop-filter: blur(8px);
+        }
+        .drag-overlay.show { display: flex; }
+        .drag-overlay p { font-size: 1.1rem; font-weight: 600; color: #d8b4fe; }
+
+        /* ========================= TOAST ========================= */
+        #toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(20,20,28,0.97); color: var(--text);
+            border: 1px solid var(--border2); border-radius: 10px; padding: 0.6rem 1.3rem;
+            font-size: 0.82rem; font-weight: 600; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 9000;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
 
     <!-- React & ReactDOM (Production) CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-
     <!-- Babel CDN (JSX compiler) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <!-- React Flow CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reactflow@11.10.3/dist/style.css">
-
-    <!-- React Flow UMD Bundle (Unified Package) -->
+    <!-- React Flow UMD Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/reactflow@11.10.3/dist/umd/index.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body,
-        html,
-        #root {
-            width: 100%;
-            height: 100%;
-            font-family: 'Inter', sans-serif;
-            background: #0d0e12;
-            color: #f0f0f5;
-            overflow: hidden;
-        }
+        
 
         /* Top Bar */
         .top-bar {
@@ -91,7 +471,7 @@
             border-radius: 999px;
         }
 
-        /* Toolbar (Now at Top) */
+        /* Toolbar */
         .left-bar {
             position: absolute;
             top: 24px;
@@ -110,7 +490,7 @@
             backdrop-filter: blur(10px);
         }
 
-        .tool-btn {
+.tool-btn {
             height: 38px;
             padding: 0 16px;
             border-radius: 20px;
@@ -126,20 +506,9 @@
             font-weight: 600;
             white-space: nowrap;
         }
-
-        .tool-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-        }
-
-        .tool-sep {
-            width: 1px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.15);
-            margin: 0 4px;
-        }
-
-        /* Custom Nodes Design */
+        .tool-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+        .tool-sep { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.15); margin: 0 4px; }
+/* Custom Nodes Design */
         #toast-root.show {
             opacity: 1 !important;
             transform: translateX(-50%) translateY(0) !important;
@@ -331,11 +700,17 @@
             transform: translateX(-50%) translateY(0) !important;
         }
     
-
 </style>
 </head>
-
 <body>
+
+<!-- Auth Loading -->
+<div id="auth-loading">
+    <div class="al-logo">MotionPix</div>
+    <div class="al-spinner"></div>
+</div>
+
+<!-- Header -->
 <header>
     <a href="/" class="logo">
         <span class="logo-dot"></span>
@@ -343,8 +718,8 @@
     </a>
     <nav>
         <a href="/" class="nav-link">Main</a>
-        <a href="/motionpix" class="nav-link active">Create</a>
-        <a href="/canvas" class="nav-link">Canvas</a>
+        <a href="/motionpix" class="nav-link">Create</a>
+        <a href="/canvas" class="nav-link active">Canvas</a>
     </nav>
     <div class="header-right">
         <div class="status-badge">
@@ -354,8 +729,12 @@
         <button class="btn-logout" id="btn-logout" onclick="handleLogout()">로그아웃</button>
     </div>
 </header>
-<div class="app-body" style="display: flex; height: calc(100vh - 56px);">
-<aside class="left-panel">
+
+<!-- Main 3-Column Body -->
+<div class="app-body">
+
+    <!-- ===== LEFT NAV PANEL ===== -->
+    <aside class="left-panel">
         <div class="left-panel-top">
 
             <div class="nav-section">
@@ -448,10 +827,844 @@
         </div>
     </aside>
 
+    <!-- ===== CENTER GENERATION PANEL ===== -->
+    <div class="center-panel" style="position: relative;">
+<div id="root" style="width:100%; height:100%; display:flex; flex-direction:column;"></div>
+</div>
+<!-- ===== RIGHT GALLERY PANEL ===== -->
+    <div class="right-panel">
+        <div class="gallery-header">
+            <span class="gallery-title">🖼️ 생성 결과물</span>
+            <div class="gallery-tabs">
+                <button class="gallery-tab active" onclick="filterGallery('all')">전체</button>
+                <button class="gallery-tab" onclick="filterGallery('image')">사진</button>
+                <button class="gallery-tab" onclick="filterGallery('video')">영상</button>
+            </div>
+        </div>
+        <div class="gallery-grid" id="gallery-grid">
+            <div class="gallery-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <rect x="2" y="2" width="20" height="20" rx="4"/>
+                    <circle cx="8" cy="8" r="2"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p>생성된 결과물이<br>여기에 쌓입니다</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div id="root" style="flex: 1; position: relative; height: 100%;"></div>
+<!-- Drag Drop Overlay -->
+<div class="drag-overlay" id="drag-overlay">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p>이미지/영상을 드롭하여 레퍼런스로 사용</p>
+</div>
 
-    <script type="text/babel">
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// =====================================================
+// STATE
+// =====================================================
+let supabaseClient = null;
+let currentSession = null;
+let activeMode = 'image';
+let base64ImageRef = null;
+let isBackendOk = false;
+
+// Settings state
+let currentRatio = '16:9';
+let currentImgRes = '2k';
+let currentVidDur = 5;
+let currentVidQuality = 'std';
+let currentVidAudio = false;
+
+// Gallery
+let galleryItems = []; // { type, src, prompt, ts }
+let galleryFilter = 'all';
+
+// =====================================================
+// SUPABASE AUTH
+// =====================================================
+async function initSupabase() {
+    try {
+        const res = await fetch('/api/supabase/config');
+        const config = await res.json();
+        if (config.supabase_url && config.supabase_key) {
+            supabaseClient = supabase.createClient(config.supabase_url, config.supabase_key);
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                currentSession = session;
+                if (event === 'SIGNED_OUT') window.location.href = '/login';
+            });
+        }
+    } catch (e) { console.error('Supabase init failed', e); }
+}
+
+async function checkAuth() {
+    const loading = document.getElementById('auth-loading');
+    try {
+        await initSupabase();
+        if (!supabaseClient) { window.location.href = '/login'; return; }
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = '/login'; return; }
+        currentSession = session;
+
+        // Show user info
+        const email = session.user?.email || '사용자';
+        document.getElementById('user-email-display').textContent = email;
+        document.getElementById('user-avatar-char').textContent = email.charAt(0).toUpperCase();
+        document.getElementById('nav-login-link') && (document.getElementById('nav-login-link').style.display = 'none');
+        document.getElementById('btn-logout').style.display = 'inline-block';
+
+        loading.style.opacity = '0';
+        setTimeout(() => { loading.style.display = 'none'; }, 400);
+
+        populateModels();
+        checkHealth();
+        setMode('image');
+        setupDragAndDrop();
+        loadGenerationsHistory();
+        loadCanvasProjectsList();
+    } catch (e) {
+        console.error('Auth failed', e);
+        window.location.href = '/login';
+    }
+}
+
+function toggleCanvasAccordion() {
+    const list = document.getElementById('canvas-projects-list');
+    const icon = document.getElementById('canvas-acc-icon');
+    if (list.style.display === 'none') {
+        list.style.display = 'flex';
+        if (icon) icon.style.transform = 'rotate(180deg)';
+        loadCanvasProjectsList();
+    } else {
+        list.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+async function loadCanvasProjectsList() {
+    if (!currentSession || !currentSession.user) return;
+    try {
+        const res = await fetch(`/api/canvas/projects?user_id=${currentSession.user.id}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const listContainer = document.getElementById('canvas-projects-list');
+        if (listContainer) {
+            listContainer.innerHTML = '';
+            
+            if (data.ok && data.data && data.data.length > 0) {
+                const projects = data.data.slice(0, 3);
+                projects.forEach(proj => {
+                    const el = document.createElement('div');
+                    el.className = 'nav-item';
+                    el.style.fontSize = '0.75rem';
+                    el.style.padding = '0.3rem 0.6rem';
+                    el.style.color = 'var(--muted)';
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.justifyContent = 'space-between';
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.style.flex = '1';
+                    titleDiv.style.whiteSpace = 'nowrap';
+                    titleDiv.style.overflow = 'hidden';
+                    titleDiv.style.textOverflow = 'ellipsis';
+                    titleDiv.style.cursor = 'pointer';
+                    titleDiv.innerHTML = `📄 ${proj.title}`;
+                    titleDiv.onclick = () => window.location.href = `/canvas?project_id=${proj.id}`;
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.style.display = 'flex';
+                    actionsDiv.style.gap = '4px';
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.innerHTML = '✏️';
+                    editBtn.style.background = 'none'; editBtn.style.border = 'none'; editBtn.style.cursor = 'pointer'; editBtn.title = '이름 수정';
+                    editBtn.onclick = (e) => { e.stopPropagation(); updateProjectTitle(proj.id, proj.title); };
+                    
+                    const delBtn = document.createElement('button');
+                    delBtn.innerHTML = '🗑️';
+                    delBtn.style.background = 'none'; delBtn.style.border = 'none'; delBtn.style.cursor = 'pointer'; delBtn.title = '삭제';
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteProject(proj.id); };
+                    
+                    actionsDiv.appendChild(editBtn);
+                    actionsDiv.appendChild(delBtn);
+                    
+                    el.appendChild(titleDiv);
+                    el.appendChild(actionsDiv);
+                    listContainer.appendChild(el);
+                });
+            }
+            
+            const newBtn = document.createElement('div');
+            newBtn.className = 'nav-item';
+            newBtn.style.fontSize = '0.75rem';
+            newBtn.style.padding = '0.4rem 0.6rem';
+            newBtn.style.color = 'var(--text)';
+            newBtn.style.justifyContent = 'center';
+            newBtn.style.background = 'rgba(255,255,255,0.05)';
+            newBtn.innerHTML = '+ 새 캔버스 저장';
+            newBtn.onclick = () => window.location.href = '/canvas';
+            listContainer.appendChild(newBtn);
+        }
+    } catch(e) { console.error('Failed to load canvas projects', e); }
+}
+
+async function updateProjectTitle(id, currentTitle) {
+    const newTitle = prompt('새 프로젝트 이름을 입력하세요:', currentTitle);
+    if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+    
+    try {
+        const res = await fetch(`/api/canvas/project/${id}/title`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle.trim() })
+        });
+        if (res.ok) {
+            showToast('✅ 이름이 수정되었습니다.');
+            loadCanvasProjectsList();
+        } else {
+            showToast('❌ 수정 실패');
+        }
+    } catch(e) {
+        showToast('❌ 수정 중 오류 발생');
+    }
+}
+
+async function deleteProject(id) {
+    if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
+    
+    try {
+        const res = await fetch(`/api/canvas/project/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('🗑️ 프로젝트가 삭제되었습니다.');
+            loadCanvasProjectsList();
+        } else {
+            showToast('❌ 삭제 실패');
+        }
+    } catch(e) {
+        showToast('❌ 삭제 중 오류 발생');
+    }
+}
+
+async function handleLogout() {
+    if (supabaseClient) await supabaseClient.auth.signOut();
+    window.location.href = '/login';
+}
+
+function getAuthHeaders() {
+    return { 'Authorization': `Bearer ${currentSession ? currentSession.access_token : ''}` };
+}
+
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+async function checkHealth() {
+    try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-text');
+        if (data.ok) {
+            dot.className = 'status-dot connected';
+            txt.textContent = 'Backend Connected';
+            isBackendOk = true;
+        } else {
+            dot.className = 'status-dot error';
+            txt.textContent = 'API Key Missing';
+        }
+    } catch {
+        document.getElementById('status-dot').className = 'status-dot error';
+        document.getElementById('status-text').textContent = 'Backend Offline';
+    }
+}
+
+// =====================================================
+// MODE SWITCHING
+// =====================================================
+const imageModels = [
+    { value: 'gemini-2.5-flash-image', label: 'Nano Banana Standard (Flash) - $0.039/장' },
+    { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2 (3.1 Flash) - $0.09/장' },
+    { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro (3.0 Pro) - $0.24/장' }
+];
+const videoModels = [
+    { value: 'kling-v2.5-turbo', label: 'Kling 2.5 Turbo (Preview) - $0.28/5초' },
+    { value: 'kling-v3.0', label: 'Kling 3.0 Standard - $0.58/5초' },
+    { value: 'kling-v2.6-i2v', label: 'Kling 2.6 I2V (Stable) - $0.45/5초' },
+    { value: 'kling-v3.0-omni', label: 'Kling 3.0 Omni (Premium) - $0.79/5초' }
+];
+
+function setMode(mode) {
+    activeMode = mode;
+
+    // Update nav items
+    document.getElementById('nav-image').classList.toggle('active', mode === 'image');
+    document.getElementById('nav-video').classList.toggle('active', mode === 'video');
+
+    // Update tab buttons
+    ['image', 'video', 'avatar', 'modify'].forEach(m => {
+        const tab = document.getElementById(`tab-${m}`);
+        if (tab) tab.classList.toggle('active', m === mode);
+    });
+
+    // Show/hide settings
+    document.getElementById('img-res-row').style.display = mode === 'image' ? '' : 'none';
+    document.getElementById('vid-dur-row').style.display = mode === 'video' ? '' : 'none';
+    document.getElementById('vid-quality-row').style.display = mode === 'video' ? '' : 'none';
+    document.getElementById('vid-audio-row').style.display = mode === 'video' ? '' : 'none';
+
+    populateModels();
+    updateI2VBadge();
+
+    // VIDEO 탭 전환 시: 이미지 레퍼런스가 있으면 안내
+    if (mode === 'video' && base64ImageRef) {
+        showToast('🎬 이미지 레퍼런스가 설정되어 있습니다. GENERATE 버튼으로 Image-to-Video를 생성합니다!');
+    }
+}
+
+function switchMode(name) {
+    if (name === 'studio') {
+        document.getElementById('nav-studio').classList.add('active');
+    }
+}
+
+function populateModels() {
+    const sel = document.getElementById('sel-model');
+    if (!sel) return;
+    const models = activeMode === 'image' ? imageModels : videoModels;
+    sel.innerHTML = models.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
+    updateCostDisplay();
+}
+
+function updateCostDisplay() {
+    const sel = document.getElementById('sel-model');
+    const lbl = document.getElementById('gen-credit-label');
+    const costEl = document.getElementById('cost-display');
+    if (!sel || !lbl) return;
+
+    const val = sel.value;
+    let credits = '2.6', cost = '$0.09';
+    if (activeMode === 'image') {
+        if (val.includes('2.5-flash') || val.includes('flash')) { credits = '1.3'; cost = '$0.039'; }
+        else if (val.includes('3.1')) { credits = currentImgRes === '4k' ? '5.2' : currentImgRes === '2k' ? '2.6' : '1.3'; cost = '$0.09'; }
+        else if (val.includes('3-pro') || val.includes('pro')) { credits = '5.2'; cost = '$0.24'; }
+    } else {
+        if (val.includes('2.5-turbo')) { credits = '28'; cost = '$0.28/5s'; }
+        else if (val.includes('3.0-omni')) { credits = '79'; cost = '$0.79/5s'; }
+        else if (val.includes('3.0')) { credits = '58'; cost = '$0.58/5s'; }
+        else if (val.includes('2.6')) { credits = '45'; cost = '$0.45/5s'; }
+    }
+    lbl.textContent = `✨ ${credits}`;
+    costEl.textContent = `예상 비용: ${cost}`;
+}
+
+// =====================================================
+// SETTINGS UPDATES
+// =====================================================
+function updateRatio(val) { currentRatio = val; }
+function updateImgRes(val) { currentImgRes = val; updateCostDisplay(); }
+function updateVidDur(val) { currentVidDur = parseInt(val); }
+function updateVidQuality(val) { currentVidQuality = val; }
+
+// =====================================================
+// FILE UPLOAD / DRAG DROP
+// =====================================================
+let currentDownloadUrl = null; // track current preview URL for download
+
+function setImageRef(dataUrl) {
+    base64ImageRef = dataUrl;
+    // Update slot thumbnail
+    const slot = document.getElementById('slot-main');
+    if (slot) {
+        slot.innerHTML = `<img src="${dataUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:9px;">`;
+        slot.classList.add('has-img');
+    }
+    // Show I2V status indicator
+    const i2vStatus = document.getElementById('i2v-status');
+    if (i2vStatus) i2vStatus.style.display = '';
+    // Show I2V badge on preview if in video mode
+    updateI2VBadge();
+}
+
+function clearImageRef() {
+    base64ImageRef = null;
+    const slot = document.getElementById('slot-main');
+    if (slot) {
+        slot.innerHTML = `<svg id="slot-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span id="slot-label" style="font-size:0.55rem;color:var(--muted)">REF</span>`;
+        slot.classList.remove('has-img');
+    }
+    const i2vStatus = document.getElementById('i2v-status');
+    if (i2vStatus) i2vStatus.style.display = 'none';
+    updateI2VBadge();
+    showToast('🗑️ 레퍼런스 이미지 제거됨');
+}
+
+function updateI2VBadge() {
+    const badge = document.getElementById('i2v-badge');
+    if (badge) badge.style.display = (activeMode === 'video' && base64ImageRef) ? 'block' : 'none';
+}
+
+function handleFileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        setImageRef(e.target.result);
+        // Also show in preview-box
+        const imgEl = document.getElementById('preview-img');
+        const vidEl = document.getElementById('preview-video');
+        imgEl.src = e.target.result; imgEl.style.display = 'block';
+        vidEl.style.display = 'none';
+        document.getElementById('preview-placeholder').style.display = 'none';
+        document.getElementById('preview-box').classList.add('has-content');
+        currentDownloadUrl = e.target.result;
+        document.getElementById('action-bar').style.display = 'flex';
+        document.getElementById('link-open').href = e.target.result;
+        showToast('📎 이미지 설정됨! VIDEO 탭으로 전환하면 이 이미지로 영상이 생성됩니다.');
+    };
+    reader.readAsDataURL(file);
+}
+
+function handlePreviewDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('preview-box').classList.remove('drag-active');
+    document.getElementById('preview-drop-hint').style.display = 'none';
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        showToast('⚠️ 이미지 또는 영상 파일만 지원합니다'); return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const dataUrl = ev.target.result;
+        // Show in preview center
+        if (file.type.startsWith('image/')) {
+            const imgEl = document.getElementById('preview-img');
+            imgEl.src = dataUrl; imgEl.style.display = 'block';
+            document.getElementById('preview-video').style.display = 'none';
+            setImageRef(dataUrl);
+        } else {
+            const vidEl = document.getElementById('preview-video');
+            vidEl.src = dataUrl; vidEl.style.display = 'block';
+            document.getElementById('preview-img').style.display = 'none';
+        }
+        document.getElementById('preview-placeholder').style.display = 'none';
+        document.getElementById('preview-box').classList.add('has-content');
+        currentDownloadUrl = dataUrl;
+        document.getElementById('action-bar').style.display = 'flex';
+        document.getElementById('link-open').href = dataUrl;
+        showToast('✅ 이미지가 중앙에 설정됨! VIDEO 탭으로 전환하면 이 이미지 기반으로 영상이 생성됩니다.');
+    };
+    reader.readAsDataURL(file);
+}
+
+function setupDragAndDrop() {
+    // Preview box drag events handled via inline ondragover/ondrop
+    // Show drop hint when dragging over preview box
+    const previewBox = document.getElementById('preview-box');
+    const dropHint = document.getElementById('preview-drop-hint');
+    if (previewBox && dropHint) {
+        previewBox.addEventListener('dragenter', (e) => {
+            if (e.dataTransfer.types.includes('Files')) dropHint.style.display = 'flex';
+        });
+        previewBox.addEventListener('dragleave', (e) => {
+            if (!previewBox.contains(e.relatedTarget)) dropHint.style.display = 'none';
+        });
+    }
+}
+
+// =====================================================
+// GENERATION FLOW
+// =====================================================
+function setUIState(state) {
+    const genBtn = document.getElementById('gen-btn');
+    const loader = document.getElementById('preview-loader');
+    const statusLbl = document.getElementById('label-status');
+
+    if (state === 'idle') {
+        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: IDLE';
+    } else if (state === 'submitting') {
+        genBtn.disabled = true;
+        loader.style.display = 'flex'; document.getElementById('loader-msg').textContent = '요청을 전송하고 있습니다...';
+        statusLbl.textContent = 'Status: SUBMITTING';
+    } else if (state === 'generating') {
+        genBtn.disabled = true;
+        loader.style.display = 'flex'; statusLbl.textContent = 'Status: GENERATING';
+    } else if (state === 'success') {
+        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: SUCCESS ✓';
+    } else if (state === 'failed') {
+        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: FAILED ✗';
+    }
+}
+
+async function handleGenerate() {
+    const prompt = document.getElementById('prompt-input').value.trim();
+    if (!prompt) { showToast('⚠️ 프롬프트를 입력해주세요'); document.getElementById('prompt-input').focus(); return; }
+
+    // Reset preview
+    document.getElementById('preview-img').style.display = 'none';
+    document.getElementById('preview-video').style.display = 'none';
+    document.getElementById('preview-placeholder').style.display = 'none';
+    document.getElementById('action-bar').style.display = 'none';
+    document.getElementById('preview-box').classList.remove('has-content');
+    document.getElementById('loader-timer').textContent = '';
+
+    if (activeMode === 'image') {
+        await generateImage(prompt);
+    } else {
+        await generateVideo(prompt);
+    }
+}
+
+async function generateImage(prompt) {
+    setUIState('submitting');
+    const model = document.getElementById('sel-model').value;
+    const ratio = currentRatio;
+    const resolution = currentImgRes;
+
+    try {
+        const body = { prompt, aspect_ratio: ratio, model_name: model, mode: resolution };
+        if (activeMode === 'modify' && base64ImageRef) {
+            body.image = base64ImageRef;
+            showToast('🎨 첨부 이미지 기반 수정 모드로 진행합니다...');
+        } else {
+            showToast('🖼️ 신규 이미지 생성 중...');
+        }
+
+        const res = await fetch('/api/gemini/image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const imgEl = document.getElementById('preview-img');
+        const imgSrc = data.image_url || data.image || (data.image_base64 ? `data:image/png;base64,${data.image_base64}` : null);
+
+        if (!imgSrc) throw new Error(data.detail || '이미지 데이터가 없습니다');
+
+        imgEl.onerror = () => { console.error('Image load failed:', imgSrc); showToast('⚠️ 이미지 로딩 중 오류가 발생했습니다. 새 탭으로 열기를 클릭해보세요.'); };
+        imgEl.src = imgSrc;
+        document.getElementById('preview-loader').style.display = 'none';
+        document.getElementById('preview-placeholder').style.display = 'none';
+        imgEl.style.display = 'block';
+        document.getElementById('preview-box').classList.add('has-content');
+        document.getElementById('link-open').href = imgSrc;
+        currentDownloadUrl = imgSrc;
+        document.getElementById('action-bar').style.display = 'flex';
+
+        // Add to gallery & save to Supabase Storage/DB
+        addToGallery('image', imgSrc, prompt, model);
+        setUIState('success');
+        showToast('✅ 이미지 생성 완료!');
+    } catch (err) {
+        document.getElementById('preview-loader').style.display = 'none';
+        setUIState('failed');
+        document.getElementById('preview-placeholder').style.display = 'flex';
+        showToast('❌ ' + (err.message || '이미지 생성 실패'));
+    }
+}
+
+async function generateVideo(prompt) {
+    setUIState('submitting');
+    const model = document.getElementById('sel-model').value;
+    const ratio = currentRatio;
+    const duration = currentVidDur;
+    const quality = currentVidQuality;
+    const audio = document.getElementById('nav-audio').checked ? 'on' : 'off';
+
+    try {
+        const body = {
+            prompt,
+            duration,
+            aspect_ratio: ratio,
+            mode: quality,
+            model_name: model,
+            sound: audio
+        };
+        if (base64ImageRef) body.image = base64ImageRef;
+
+        showToast('🎬 Kling AI 비디오 생성 요청 중...');
+
+        const res = await fetch('/api/kling/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            let errDetail = err.detail;
+            if (typeof errDetail === 'object' && errDetail !== null) {
+                errDetail = errDetail.error || JSON.stringify(errDetail);
+            }
+            throw new Error(errDetail || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.task_id) throw new Error('task_id를 받지 못했습니다');
+
+        setUIState('generating');
+        document.getElementById('loader-msg').textContent = 'Kling AI가 영상을 생성하고 있습니다 (30~120초)...';
+        startPolling(data.task_type || 'text2video', data.task_id, prompt);
+    } catch (err) {
+        setUIState('failed');
+        document.getElementById('preview-placeholder').style.display = 'flex';
+        showToast('❌ ' + (err.message || '영상 생성 실패'));
+    }
+}
+
+function startPolling(taskType, taskId, prompt) {
+    let elapsed = 0;
+    const timerEl = document.getElementById('loader-timer');
+
+    const tickTimer = setInterval(() => {
+        elapsed += 2;
+        timerEl.textContent = `경과: ${elapsed}초`;
+    }, 2000);
+
+    const poll = async () => {
+        try {
+            const res = await fetch(`/api/kling/task/${taskType}/${taskId}`, {
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                let errDetail = err.detail;
+                if (typeof errDetail === 'object' && errDetail !== null) {
+                    errDetail = errDetail.error || JSON.stringify(errDetail);
+                }
+                throw new Error(errDetail || '폴링 오류');
+            }
+            const data = await res.json();
+            const st = (data.status || data.task_status || '').toLowerCase();
+
+            if (st === 'success' || st === 'succeeded' || st === 'completed' || data.video_url) {
+                clearInterval(tickTimer);
+                const vid = document.getElementById('preview-video');
+                vid.src = data.video_url;
+                vid.style.display = 'block';
+                document.getElementById('preview-img').style.display = 'none';
+                document.getElementById('preview-box').classList.add('has-content');
+                document.getElementById('link-open').href = data.video_url;
+                currentDownloadUrl = data.video_url;
+                document.getElementById('action-bar').style.display = 'flex';
+
+                // Add to gallery & save to Supabase Storage/DB
+                addToGallery('video', data.video_url, prompt, model);
+                setUIState('success');
+                showToast('🎉 비디오 생성 완료!');
+            } else if (st === 'failed') {
+                clearInterval(tickTimer);
+                throw new Error('Kling 생성 실패: ' + (data.message || data.error || ''));
+            } else {
+                setTimeout(poll, 4000);
+            }
+        } catch (err) {
+            clearInterval(tickTimer);
+            setUIState('failed');
+            document.getElementById('preview-placeholder').style.display = 'flex';
+            showToast('❌ ' + err.message);
+        }
+    };
+    setTimeout(poll, 3000);
+}
+
+// =====================================================
+// GALLERY & SUPABASE STORAGE/DB HISTORY INTEGRATION
+// =====================================================
+async function loadGenerationsHistory() {
+    if (!currentSession?.user?.id) return;
+    try {
+        const userId = currentSession.user.id;
+        const res = await fetch(`/api/generations?user_id=${encodeURIComponent(userId)}`, {
+            headers: getAuthHeaders()
+        });
+        if (res.ok) {
+            const result = await res.json();
+            if (result.ok && Array.isArray(result.data)) {
+                galleryItems = result.data.map(row => ({
+                    type: row.type || 'image',
+                    src: row.image_url,
+                    prompt: row.prompt,
+                    model: row.model_name,
+                    ts: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+                }));
+                renderGallery();
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load generations history:', e);
+    }
+}
+
+async function addToGallery(type, src, prompt, modelName) {
+    const item = { type, src, prompt, model: modelName || '', ts: Date.now() };
+    galleryItems.unshift(item);
+    renderGallery();
+
+    // Save to Supabase Storage & DB if logged in
+    const userId = currentSession?.user?.id;
+    if (userId) {
+        try {
+            const body = {
+                user_id: userId,
+                prompt: prompt || '',
+                image_url: src,
+                model_name: modelName || (document.getElementById('sel-model') ? document.getElementById('sel-model').value : 'nano-banana'),
+                type: type || 'image'
+            };
+            const saveRes = await fetch('/api/generations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                body: JSON.stringify(body)
+            });
+            if (saveRes.ok) {
+                const saveResult = await saveRes.json();
+                if (saveResult.ok && saveResult.data && saveResult.data.image_url) {
+                    item.src = saveResult.data.image_url;
+                    renderGallery();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to save generation to Supabase:', e);
+        }
+    }
+}
+
+function filterGallery(filter) {
+    galleryFilter = filter;
+    document.querySelectorAll('.gallery-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.textContent.includes(
+            filter === 'all' ? '전체' : filter === 'image' ? '사진' : '영상'
+        ));
+    });
+    renderGallery();
+}
+
+function renderGallery() {
+    const grid = document.getElementById('gallery-grid');
+    const filtered = galleryFilter === 'all' ? galleryItems : galleryItems.filter(i => i.type === galleryFilter);
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div class="gallery-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="2"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>생성된 결과물이<br>여기에 쌓입니다</p>
+        </div>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map((item, idx) => {
+        const isVideo = item.type === 'video';
+        const mediaEl = isVideo
+            ? `<video src="${item.src}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>`
+            : `<img src="${item.src}" alt="${item.prompt}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`;
+
+        return `<div class="gallery-item" onclick="previewGalleryItem(${idx})" onmouseenter="this.querySelector('video') && this.querySelector('video').play()" onmouseleave="this.querySelector('video') && (this.querySelector('video').pause(), this.querySelector('video').currentTime=0)">
+            ${mediaEl}
+            <div class="item-overlay">
+                <span class="item-type-badge">${isVideo ? '🎬 VIDEO' : '🖼️ IMG'}</span>
+                <span class="item-dl-btn" onclick="event.stopPropagation(); triggerDownload('${item.src}', 'motionpix-${item.type}.${isVideo ? 'mp4' : 'jpg'}')">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function previewGalleryItem(idx) {
+    const filtered = galleryFilter === 'all' ? galleryItems : galleryItems.filter(i => i.type === galleryFilter);
+    const item = filtered[idx];
+    if (!item) return;
+
+    const imgEl = document.getElementById('preview-img');
+    const vidEl = document.getElementById('preview-video');
+    imgEl.style.display = 'none';
+    vidEl.style.display = 'none';
+
+    if (item.type === 'video') {
+        vidEl.src = item.src;
+        vidEl.style.display = 'block';
+    } else {
+        imgEl.src = item.src;
+        imgEl.style.display = 'block';
+    }
+    document.getElementById('preview-box').classList.add('has-content');
+    document.getElementById('preview-placeholder').style.display = 'none';
+    document.getElementById('link-open').href = item.src;
+    document.getElementById('action-bar').style.display = 'flex';
+}
+
+// =====================================================
+// DOWNLOAD
+// =====================================================
+function doDownloadCurrent() {
+    const url = currentDownloadUrl;
+    if (!url) { showToast('⚠️ 다운로드할 파일이 없습니다'); return; }
+    const isVideo = url.includes('.mp4') || url.includes('video') || url.includes('kling');
+    const filename = isVideo ? `motionpix-video-${Date.now()}.mp4` : `motionpix-image-${Date.now()}.jpg`;
+    triggerDownload(url, filename);
+}
+
+function triggerDownload(url, filename) {
+    if (!url) return;
+    // 1. Base64 data: URL → blob download (most reliable)
+    if (url.startsWith('data:')) {
+        try {
+            const parts = url.split(';base64,');
+            const contentType = parts[0].replace('data:', '');
+            const raw = window.atob(parts[1]);
+            const uInt8Array = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; ++i) uInt8Array[i] = raw.charCodeAt(i);
+            const blob = new Blob([uInt8Array], { type: contentType });
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl; a.download = filename || 'motionpix-image.jpg';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+            showToast('💾 다운로드 완료!'); return;
+        } catch (e) { console.error('Base64 blob error', e); }
+    }
+    // 2. Static local URL → direct download
+    if (url.startsWith('/static/') || url.startsWith('http://127.0.0.1') || url.startsWith('http://localhost')) {
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast('💾 다운로드 시작!'); return;
+    }
+    // 3. Remote HTTPS URL (Kling CDN) → use public proxy endpoint
+    const proxyUrl = `/api/download/proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+    const a = document.createElement('a');
+    a.href = proxyUrl; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('💾 다운로드 시작! (원격 파일)');
+}
+
+// =====================================================
+// TOAST
+// =====================================================
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// =====================================================
+// INIT
+// =====================================================
+checkAuth();
+</script>
+<script type="text/babel">
+
         const { useState, useCallback, useRef, useEffect } = React;
 
         let supabaseClient = null;
@@ -1574,36 +2787,7 @@
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
         root.render(<App />);
-    </script>
-
-    <div id="toast-root" style="
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%) translateY(20px);
-        background: #1f2029;
-        border: 1px solid rgba(255,255,255,0.15);
-        color: #f0f0f5;
-        padding: 10px 22px;
-        border-radius: 12px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        opacity: 0;
-        transition: all 0.3s;
-        z-index: 9999;
-        pointer-events: none;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-    "></div>
-</div>
-<script>
-
-function switchMode(name) {
-    if (name === 'studio') window.location.href = '/motionpix';
-}
-function handleLogout() {
-    window.location.href = '/login';
-}
+    
 </script>
 </body>
-
 </html>
