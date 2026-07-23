@@ -1529,6 +1529,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
 
             if (['success', 'succeeded', 'completed', 'succeed', 'submitted'].includes(st) || data.video_url) {
                 clearInterval(tickTimer);
+                document.getElementById('preview-loader').style.display = 'none';
                 const finalVideoUrl = data.video_url || 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=1280&height=720&nologo=true';
                 const vid = document.getElementById('preview-video');
                 vid.src = finalVideoUrl;
@@ -1756,6 +1757,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+
 
 
 
@@ -3040,6 +3042,7 @@ checkAuth();
     
 
 })();
+
 
 
 
