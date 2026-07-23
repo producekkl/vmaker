@@ -1428,12 +1428,13 @@ async def execute_single_node(req: SingleNodeExecReq):
                 except Exception as ex:
                     print(f"[Video Node] ❌ Kling API exception: {ex}")
                     import traceback; traceback.print_exc()
+                    raise HTTPException(status_code=400, detail=str(ex))
             else:
                 print("[Video Node] ⚠️ KLING_API_KEY is not set!")
 
             if not video_url:
                 raise HTTPException(
-                    status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                    status_code=400,
                     detail=f"Kling 비디오 생성 실패. 모드: {exec_mode}. 누락 필드: {missing_fields if missing_fields else '없음'}"
                 )
 
@@ -1513,7 +1514,8 @@ async def execute_single_node(req: SingleNodeExecReq):
         node["status"] = "failed"
         import traceback; tb = traceback.format_exc()
         print(f"[Node Execute] ❌ {ntype} node [{nid}] FAILED: {e}\n{tb}")
-        return {"status": "failed", "error": str(e), "node": node}
+        err_msg = getattr(e, "detail", str(e))
+        return {"status": "failed", "error": err_msg, "node": node}
 
 
 @app.get("/api/download/proxy")

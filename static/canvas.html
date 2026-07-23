@@ -19,6 +19,9 @@
     <!-- React Flow UMD Bundle (Unified Package) -->
     <script src="https://cdn.jsdelivr.net/npm/reactflow@11.10.3/dist/umd/index.min.js"></script>
 
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -329,6 +332,26 @@
 
     <script type="text/babel">
         const { useState, useCallback, useRef, useEffect } = React;
+
+        let supabaseClient = null;
+        let accessToken = null;
+        let currentUser = null;
+
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/supabase/config');
+                const config = await res.json();
+                if (config.supabase_url && config.supabase_key) {
+                    supabaseClient = window.supabase.createClient(config.supabase_url, config.supabase_key);
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session) {
+                        accessToken = session.access_token;
+                        currentUser = session.user;
+                    }
+                }
+            } catch (e) { console.error('Supabase init failed', e); }
+        }
+        initSupabase();
 
         // Resolve ReactFlow components from unified ReactFlow global variable
         const RF_raw = window.ReactFlow || {};
@@ -885,14 +908,15 @@
                     ? (imageNode.data.imageUrl || imageNode.data.inputImage || null)
                     : null;
 
-                // Get User ID from Supabase local storage token
+                // Get User ID from Supabase SDK
                 let userId = null;
-                const sbKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-                if (sbKey) {
-                    try {
-                        const sessionData = JSON.parse(localStorage.getItem(sbKey));
-                        userId = sessionData?.user?.id || null;
-                    } catch(e) {}
+                let currentToken = null;
+                if (window.supabaseClient) {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    if (session) {
+                        userId = session.user?.id || null;
+                        currentToken = session.access_token;
+                    }
                 }
 
                 const finalPayload = {
@@ -931,9 +955,12 @@
                 showToast(`🚀 ${node.type.toUpperCase()} 노드 실행 시작...`);
 
                 try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
+
                     const res = await fetch('/api/workflow/node-execute', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers,
                         body: JSON.stringify(finalPayload)
                     });
                     if (!res.ok) {
