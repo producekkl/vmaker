@@ -325,7 +325,9 @@ def create_video(req: CreateVideoRequest):
             "prompt": translate_prompt_to_english(req.prompt)
         }
         if req.image and req.image.strip():
-            or_payload["image_url"] = ensure_public_url(req.image.strip(), "seedance_input.jpg")
+            pub_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
+            or_payload["image_url"] = pub_url
+            or_payload["image"] = pub_url
 
         try:
             or_res = requests.post(or_url, json=or_payload, headers=or_headers, timeout=25)
