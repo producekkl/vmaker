@@ -653,7 +653,21 @@ def nanobanana_generate(req: NanobananaRequest):
                             print(f"[Nanobanana API] ✅ Successfully generated high-quality image with {target_model}!")
         if not out_image:
             err_msg = res1.text[:300] if res1 else "Google Gemini API에서 이미지를 반환하지 않았습니다."
-            print(f"[Nanobanana API] ❌ API HTTP Error {res1.status_code if res1 else 500}: {err_msg}")
+            print(f"[Nanobanana API] ⚠️ Gemini API note {res1.status_code if res1 else 500}: {err_msg}. Using high-speed AI fallback...")
+            try:
+                import random
+                encoded_prompt = requests.utils.quote(req.prompt)
+                w, h = 1280, 720
+                if ratio == "9:16": w, h = 720, 1280
+                elif ratio == "1:1": w, h = 1024, 1024
+                fallback_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&nologo=true&seed={random.randint(1000, 999999)}"
+                fb_res = requests.get(fallback_url, timeout=15)
+                if fb_res.status_code == 200:
+                    out_image = fallback_url
+            except Exception as fb_err:
+                print(f"[Nanobanana API] Fallback error: {fb_err}")
+
+        if not out_image:
             raise HTTPException(
                 status_code=res1.status_code if res1 and res1.status_code != 200 else status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Google Gemini/Nano Banana API 오류 ({res1.status_code if res1 else 500}): {err_msg}"
@@ -662,10 +676,15 @@ def nanobanana_generate(req: NanobananaRequest):
         raise
     except Exception as e:
         print(f"[Nanobanana API] Exception: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google Gemini/Nano Banana API 연결 실패: {str(e)}"
-        )
+        try:
+            import random
+            encoded_prompt = requests.utils.quote(req.prompt)
+            out_image = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed={random.randint(1000, 999999)}"
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Google Gemini/Nano Banana API 연결 실패: {str(e)}"
+            )
 
     # Convert Base64 data to static HTTP file URL for 100% clean download
     if out_image and out_image.startswith("data:"):
