@@ -979,13 +979,16 @@
                                 const statusRes = await fetch(`/api/kling/task/${task_type}/${task_id}`);
                                 if (!statusRes.ok) throw new Error(`Polling API error: ${statusRes.status}`);
                                 const statusData = await statusRes.json();
+                                const ts = statusData.task_status || statusData.status;
                                 
-                                if (statusData.data?.task_status === 'succeed' || statusData.data?.task_status === 'completed') {
+                                if (ts === 'succeed' || ts === 'completed' || ts === 'success') {
                                     clearInterval(pollInterval);
-                                    let vUrl = '';
-                                    const taskRes = statusData.data.task_result;
-                                    if (taskRes && taskRes.videos && taskRes.videos.length > 0) {
-                                        vUrl = taskRes.videos[0].url;
+                                    let vUrl = statusData.video_url;
+                                    if (!vUrl) {
+                                        const taskRes = statusData.raw_response?.data?.task_result;
+                                        if (taskRes && taskRes.videos && taskRes.videos.length > 0) {
+                                            vUrl = taskRes.videos[0].url;
+                                        }
                                     }
                                     
                                     if (vUrl) {
@@ -1012,9 +1015,9 @@
                                     } else {
                                         throw new Error("No video URL returned from Kling API");
                                     }
-                                } else if (statusData.data?.task_status === 'failed') {
+                                } else if (ts === 'failed') {
                                     clearInterval(pollInterval);
-                                    throw new Error(statusData.data?.task_status_msg || "Kling task failed");
+                                    throw new Error(statusData.raw_response?.data?.task_status_msg || "Kling task failed");
                                 }
                             } catch (e) {
                                 clearInterval(pollInterval);
