@@ -1664,6 +1664,7 @@ function showToast(msg) {
 checkAuth();
 </script>
 <script type="text/babel">
+(() => {
 
         const { useState, useCallback, useRef, useEffect } = React;
 
@@ -2788,6 +2789,7 @@ checkAuth();
         const root = ReactDOM.createRoot(container);
         root.render(<App />);
     
+})();
 </script>
 </body>
 </html>
