@@ -1194,11 +1194,13 @@
 
             const saveProject = async () => {
                 if (!userId) {
+                    alert('로그인이 필요합니다.');
                     showToast('로그인이 필요합니다.');
                     return;
                 }
                 
                 if (!projectTitle.trim()) {
+                    alert('프로젝트 제목을 입력해주세요.');
                     showToast('프로젝트 제목을 입력해주세요.');
                     return;
                 }
@@ -1216,22 +1218,27 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    
                     if (!res.ok) {
-                        if (res.status === 400) {
-                            const errData = await res.json();
-                            showToast('❌ ' + (errData.detail || '최대 개수 초과'));
-                        } else {
-                            throw new Error('Save failed');
-                        }
+                        let errText = await res.text();
+                        try {
+                            const errJson = JSON.parse(errText);
+                            errText = errJson.detail || errText;
+                        } catch(e) {}
+                        alert('❌ 저장 실패: ' + errText);
+                        showToast('❌ 저장 실패: ' + errText);
                         return;
                     }
+                    
                     const data = await res.json();
                     if (data.ok && data.data) {
                         setCurrentProjectId(data.data.id);
+                        alert(`💾 [${data.data.title}] 저장되었습니다!`);
                         showToast(`💾 [${data.data.title}] 저장되었습니다.`);
                     }
                 } catch (e) {
                     console.error(e);
+                    alert('❌ 프로젝트 저장 중 오류 발생: ' + e.message);
                     showToast('프로젝트 저장에 실패했습니다.');
                 }
             };
