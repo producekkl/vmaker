@@ -445,9 +445,16 @@
                     <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
                     AI 생성
                 </div>
-                <div class="nav-item" id="nav-canvas" onclick="window.location.href='/canvas'">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-                    캔버스 워크플로우
+                <div class="nav-item" id="nav-canvas" onclick="toggleCanvasAccordion()" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                        캔버스 워크플로우
+                    </div>
+                    <svg id="canvas-acc-icon" style="width:14px; height:14px; transition: transform 0.2s;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <!-- Canvas Projects Sub-list -->
+                <div id="canvas-projects-list" style="display: none; flex-direction: column; padding-left: 12px; margin-top: 4px; gap: 4px;">
+                    <!-- Items injected here -->
                 </div>
             </div>
 
@@ -709,9 +716,128 @@ async function checkAuth() {
         setMode('image');
         setupDragAndDrop();
         loadGenerationsHistory();
+        loadCanvasProjectsList();
     } catch (e) {
         console.error('Auth failed', e);
         window.location.href = '/login';
+    }
+}
+
+function toggleCanvasAccordion() {
+    const list = document.getElementById('canvas-projects-list');
+    const icon = document.getElementById('canvas-acc-icon');
+    if (list.style.display === 'none') {
+        list.style.display = 'flex';
+        if (icon) icon.style.transform = 'rotate(180deg)';
+        loadCanvasProjectsList();
+    } else {
+        list.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+async function loadCanvasProjectsList() {
+    if (!currentSession || !currentSession.user) return;
+    try {
+        const res = await fetch(`/api/canvas/projects?user_id=${currentSession.user.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const listContainer = document.getElementById('canvas-projects-list');
+        if (listContainer) {
+            listContainer.innerHTML = '';
+            
+            if (data.ok && data.data && data.data.length > 0) {
+                const projects = data.data.slice(0, 3);
+                projects.forEach(proj => {
+                    const el = document.createElement('div');
+                    el.className = 'nav-item';
+                    el.style.fontSize = '0.75rem';
+                    el.style.padding = '0.3rem 0.6rem';
+                    el.style.color = 'var(--muted)';
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.justifyContent = 'space-between';
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.style.flex = '1';
+                    titleDiv.style.whiteSpace = 'nowrap';
+                    titleDiv.style.overflow = 'hidden';
+                    titleDiv.style.textOverflow = 'ellipsis';
+                    titleDiv.style.cursor = 'pointer';
+                    titleDiv.innerHTML = `📄 ${proj.title}`;
+                    titleDiv.onclick = () => window.location.href = `/canvas?project_id=${proj.id}`;
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.style.display = 'flex';
+                    actionsDiv.style.gap = '4px';
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.innerHTML = '✏️';
+                    editBtn.style.background = 'none'; editBtn.style.border = 'none'; editBtn.style.cursor = 'pointer'; editBtn.title = '이름 수정';
+                    editBtn.onclick = (e) => { e.stopPropagation(); updateProjectTitle(proj.id, proj.title); };
+                    
+                    const delBtn = document.createElement('button');
+                    delBtn.innerHTML = '🗑️';
+                    delBtn.style.background = 'none'; delBtn.style.border = 'none'; delBtn.style.cursor = 'pointer'; delBtn.title = '삭제';
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteProject(proj.id); };
+                    
+                    actionsDiv.appendChild(editBtn);
+                    actionsDiv.appendChild(delBtn);
+                    
+                    el.appendChild(titleDiv);
+                    el.appendChild(actionsDiv);
+                    listContainer.appendChild(el);
+                });
+            }
+            
+            const newBtn = document.createElement('div');
+            newBtn.className = 'nav-item';
+            newBtn.style.fontSize = '0.75rem';
+            newBtn.style.padding = '0.4rem 0.6rem';
+            newBtn.style.color = 'var(--text)';
+            newBtn.style.justifyContent = 'center';
+            newBtn.style.background = 'rgba(255,255,255,0.05)';
+            newBtn.innerHTML = '+ 새 캔버스 저장';
+            newBtn.onclick = () => window.location.href = '/canvas';
+            listContainer.appendChild(newBtn);
+        }
+    } catch(e) { console.error('Failed to load canvas projects', e); }
+}
+
+async function updateProjectTitle(id, currentTitle) {
+    const newTitle = prompt('새 프로젝트 이름을 입력하세요:', currentTitle);
+    if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+    
+    try {
+        const res = await fetch(`/api/canvas/project/${id}/title`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle.trim() })
+        });
+        if (res.ok) {
+            showToast('✅ 이름이 수정되었습니다.');
+            loadCanvasProjectsList();
+        } else {
+            showToast('❌ 수정 실패');
+        }
+    } catch(e) {
+        showToast('❌ 수정 중 오류 발생');
+    }
+}
+
+async function deleteProject(id) {
+    if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
+    
+    try {
+        const res = await fetch(`/api/canvas/project/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('🗑️ 프로젝트가 삭제되었습니다.');
+            loadCanvasProjectsList();
+        } else {
+            showToast('❌ 삭제 실패');
+        }
+    } catch(e) {
+        showToast('❌ 삭제 중 오류 발생');
     }
 }
 

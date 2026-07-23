@@ -1951,6 +1951,17 @@ def save_canvas_project(req: CanvasSaveRequest):
     
     if req.project_id:
         payload["id"] = req.project_id
+    else:
+        try:
+            count_res = requests.get(db_url, headers=headers, params={"user_id": f"eq.{req.user_id}", "select": "id"}, timeout=10)
+            if count_res.status_code == 200:
+                projects = count_res.json()
+                if len(projects) >= 3:
+                    raise HTTPException(status_code=400, detail="최대 3개까지만 저장할 수 있습니다. 기존 프로젝트를 삭제 후 시도해 주세요.")
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Error checking project count: {e}")
 
     try:
         res = requests.post(db_url, json=payload, headers=headers, timeout=20)
@@ -2023,6 +2034,68 @@ def get_canvas_project(project_id: str):
             raise HTTPException(status_code=res.status_code, detail="Failed to fetch canvas project")
     except Exception as e:
         print(f"[Supabase DB] Canvas Project Fetch Exception: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Serve SEO landing pages under static/features/
+class CanvasTitleUpdate(BaseModel):
+    title: str
+
+@app.patch("/api/canvas/project/{project_id}/title")
+def update_canvas_project_title(project_id: str, req: CanvasTitleUpdate):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing.")
+
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
+    params = {
+        "id": f"eq.{project_id}"
+    }
+    payload = {
+        "title": req.title,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+    try:
+        res = requests.patch(db_url, json=payload, headers=headers, params=params, timeout=15)
+        if res.status_code in (200, 204):
+            return {"ok": True, "message": "Title updated"}
+        else:
+            print(f"[Supabase DB] Canvas Project patch error {res.status_code}: {res.text}")
+            raise HTTPException(status_code=res.status_code, detail="Failed to update canvas project title")
+    except Exception as e:
+        print(f"[Supabase DB] Canvas Project Patch Exception: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/canvas/project/{project_id}")
+def delete_canvas_project(project_id: str):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        raise HTTPException(status_code=500, detail="Supabase configuration is missing.")
+
+    db_url = f"{supabase_url}/rest/v1/canvas_projects"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key
+    }
+    params = {
+        "id": f"eq.{project_id}"
+    }
+
+    try:
+        res = requests.delete(db_url, headers=headers, params=params, timeout=15)
+        if res.status_code in (200, 204):
+            return {"ok": True, "message": "Project deleted"}
+        else:
+            print(f"[Supabase DB] Canvas Project delete error {res.status_code}: {res.text}")
+            raise HTTPException(status_code=res.status_code, detail="Failed to delete canvas project")
+    except Exception as e:
+        print(f"[Supabase DB] Canvas Project Delete Exception: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Serve SEO landing pages under static/features/

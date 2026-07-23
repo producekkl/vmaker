@@ -1209,7 +1209,15 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error('Save failed');
+                    if (!res.ok) {
+                        if (res.status === 400) {
+                            const errData = await res.json();
+                            showToast('❌ ' + (errData.detail || '최대 개수 초과'));
+                        } else {
+                            throw new Error('Save failed');
+                        }
+                        return;
+                    }
                     const data = await res.json();
                     if (data.ok && data.data) {
                         setCurrentProjectId(data.data.id);
@@ -1220,6 +1228,45 @@
                     showToast('프로젝트 저장에 실패했습니다.');
                 }
             };
+            
+            const deleteProject = async (id, e) => {
+                e.stopPropagation();
+                if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
+                try {
+                    const res = await fetch(`/api/canvas/project/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        showToast('🗑️ 프로젝트가 삭제되었습니다.');
+                        loadProjects();
+                        if (currentProjectId === id) {
+                            setCurrentProjectId(null);
+                            setProjectTitle('새 캔버스 프로젝트');
+                        }
+                    } else {
+                        showToast('❌ 삭제 실패');
+                    }
+                } catch(err) { showToast('❌ 오류 발생'); }
+            };
+
+            const updateProjectTitle = async (id, currentTitle, e) => {
+                e.stopPropagation();
+                const newTitle = prompt('새 프로젝트 이름을 입력하세요:', currentTitle);
+                if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+                try {
+                    const res = await fetch(`/api/canvas/project/${id}/title`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: newTitle.trim() })
+                    });
+                    if (res.ok) {
+                        showToast('✅ 이름이 수정되었습니다.');
+                        loadProjects();
+                        if (currentProjectId === id) setProjectTitle(newTitle.trim());
+                    } else {
+                        showToast('❌ 수정 실패');
+                    }
+                } catch(err) { showToast('❌ 오류 발생'); }
+            };
+
             
             const restoreProject = async (projectId) => {
                 try {
@@ -1251,7 +1298,13 @@
             };
 
             useEffect(() => {
-                loadTemplate();
+                const urlParams = new URLSearchParams(window.location.search);
+                const projectId = urlParams.get('project_id');
+                if (projectId) {
+                    restoreProject(projectId);
+                } else {
+                    loadTemplate();
+                }
             }, []);
 
             return (
@@ -1350,8 +1403,14 @@
                                     ) : (
                                         projectsList.map(proj => (
                                             <div key={proj.id} onClick={() => restoreProject(proj.id)} style={{ padding: '12px', background: '#272a38', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'} onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}>
-                                                <span style={{ color: '#e4e4e7', fontWeight: 600 }}>{proj.title}</span>
-                                                <span style={{ color: '#71717a', fontSize: '0.8rem' }}>{new Date(proj.updated_at).toLocaleDateString()}</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ color: '#e4e4e7', fontWeight: 600 }}>{proj.title}</span>
+                                                    <span style={{ color: '#71717a', fontSize: '0.7rem' }}>{new Date(proj.updated_at).toLocaleDateString()}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={(e) => updateProjectTitle(proj.id, proj.title, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="이름 수정">✏️</button>
+                                                    <button onClick={(e) => deleteProject(proj.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="삭제">🗑️</button>
+                                                </div>
                                             </div>
                                         ))
                                     )}
