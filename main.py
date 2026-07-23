@@ -1932,7 +1932,31 @@ def get_generations(user_id: str, request: Request):
             return {"ok": True, "data": []}
     except Exception as e:
         print(f"[Supabase DB] Fetch Exception: {e}")
-        return {"ok": True, "data": []}
+class GenerationDeleteRequest(BaseModel):
+    user_id: str
+    image_url: str
+
+@app.delete("/api/generations")
+def delete_generation(req: GenerationDeleteRequest):
+    supabase_url, supabase_key, _ = get_supabase_config()
+    if not supabase_url or not supabase_key:
+        return {"ok": True}
+
+    db_url = f"{supabase_url}/rest/v1/generations"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Prefer": "return=representation"
+    }
+    params = {
+        "user_id": f"eq.{req.user_id}",
+        "image_url": f"eq.{req.image_url}"
+    }
+    try:
+        requests.delete(db_url, headers=headers, params=params, timeout=15)
+    except Exception as e:
+        print(f"[Supabase DB Delete Exception]: {e}")
+    return {"ok": True}
 
 # =====================================================
 # WORKFLOW CANVAS NODE EXECUTION API
