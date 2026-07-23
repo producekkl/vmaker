@@ -652,7 +652,7 @@ def nanobanana_generate(req: NanobananaRequest):
                 }
             }
             try:
-                res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=8)
+                res1 = requests.post(url_gemini, json=gemini_payload, headers=headers, timeout=25)
                 if res1.status_code == 200:
                     res_json = res1.json()
                     candidates = res_json.get("candidates", [])
