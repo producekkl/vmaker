@@ -710,6 +710,7 @@
 
         // Main App Component
         const App = () => {
+            const [userId, setUserId] = useState(null);
             const [nodes, setNodes] = useState([]);
             const [edges, setEdges] = useState([]);
             const [modalImage, setModalImage] = useState(null);
@@ -1304,6 +1305,14 @@
             };
 
             useEffect(() => {
+                if (window.supabaseClient) {
+                    window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                        if (session && session.user) {
+                            setUserId(session.user.id);
+                        }
+                    });
+                }
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const projectId = urlParams.get('project_id');
                 if (projectId) {
@@ -1330,11 +1339,11 @@
                                     onBlur={e => e.target.style.border = '1px solid transparent'}
                                     placeholder="프로젝트 제목 입력..."
                                 />
+                                <button className="tool-btn" onClick={saveProject} style={{ padding: '6px 12px', background: '#f59e0b', color: '#000', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>💾 저장</button>
+                                <button className="tool-btn" onClick={loadProjects} style={{ padding: '6px 12px', background: '#3f3f46', color: '#fff', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>📂 프로젝트 목록</button>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button className="tool-btn" onClick={saveProject} style={{ padding: '6px 12px', background: '#f59e0b', color: '#000', width: 'auto' }}>💾 저장</button>
-                            <button className="tool-btn" onClick={loadProjects} style={{ padding: '6px 12px', background: '#3f3f46', width: 'auto' }}>📂 프로젝트 목록</button>
                             <div className="rule-badge" style={{ marginLeft: '12px' }}>
                                 💡 노드/연결선 클릭 후 Delete / Backspace 키로 즉시 삭제 가능
                             </div>
