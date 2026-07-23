@@ -1383,28 +1383,22 @@ async def execute_single_node(req: SingleNodeExecReq):
                 print(f"[Video Node] ⚠️ MISSING UPSTREAM VALUES: {missing_fields}")
 
             # ─────────────────────────────────────────────────────────────
-            # Convert local URLs to Base64 for Kling API
+            # Fix local URLs / Base64 to Public URLs via Supabase Storage
             # ─────────────────────────────────────────────────────────────
-            if img_src:
-                if img_src.startswith("/static/"):
-                    try:
-                        local_path = img_src.lstrip("/")
-                        if os.path.exists(local_path):
-                            with open(local_path, "rb") as f:
-                                b64_data = base64.b64encode(f.read()).decode('utf-8')
-                            img_src = f"data:image/jpeg;base64,{b64_data}"
-                            print(f"[Video Node] Converted local image to Base64 Data URI (length: {len(img_src)})")
-                        else:
-                            raise HTTPException(status_code=400, detail=f"로컬 이미지 파일을 찾을 수 없습니다: {local_path}")
-                    except HTTPException:
-                        raise
-                    except Exception as b64_err:
-                        print(f"[Video Node] ⚠️ Base64 conversion failed: {b64_err}")
-                        raise HTTPException(status_code=400, detail=f"이미지 변환 중 오류 발생: {b64_err}")
-                elif img_src.startswith("data:image"):
-                    print(f"[Video Node] Using existing Base64 Data URI (length: {len(img_src)})")
-                else:
-                    print(f"[Video Node] Using URL: {img_src}")
+            if img_src and (img_src.startswith("/static/") or img_src.startswith("data:image")):
+                try:
+                    pub_url = ensure_public_url(img_src, f"canvas_image.jpg")
+                    if pub_url and pub_url.startswith("http"):
+                        print(f"[Video Node] Converted image to public URL: {pub_url}")
+                        img_src = pub_url
+                    else:
+                        print(f"[Video Node] ⚠️ Failed to upload image to Supabase Storage")
+                        raise HTTPException(status_code=400, detail="이미지를 퍼블릭 URL로 변환(업로드)하는 데 실패했습니다.")
+                except HTTPException:
+                    raise
+                except Exception as upload_ex:
+                    print(f"[Video Node] ⚠️ ensure_public_url failed: {upload_ex}")
+                    raise HTTPException(status_code=400, detail=f"이미지 업로드 중 오류 발생: {upload_ex}")
 
             # ─────────────────────────────────────────────────────────────
             # Determine execution mode
@@ -1428,9 +1422,16 @@ async def execute_single_node(req: SingleNodeExecReq):
             if KLING_API_KEY:
                 task_type = "image2video" if has_image else "text2video"
                 
+                # Final check before calling Kling
+                if task_type == "image2video" and (not img_src or not img_src.startswith("http")):
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"유효한 퍼블릭 이미지 URL이 아닙니다: {img_src}"
+                    )
+                
                 try:
                     # Log payload structure
-                    img_preview = f"{img_src[:40]}... (length: {len(img_src)})" if img_src else "None"
+                    img_preview = f"{img_src[:40]}..." if img_src else "None"
                     print(f"[Video Node] Kling API Request Payload:")
                     print(f" - prompt: {full_prompt}")
                     print(f" - image: {img_preview}")
