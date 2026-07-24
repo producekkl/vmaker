@@ -491,53 +491,132 @@
 
         <!-- Shorts Maker Area (Hidden by default) -->
         <div id="shorts-maker-area" style="display: none; flex: 1; flex-direction: column; padding: 2rem; overflow-y: auto; align-items: center;">
-            <h2 style="font-size: 1.8rem; font-family: var(--font-display); font-weight: 800; background: linear-gradient(135deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1.5rem;">유튜브 쇼츠 자동화 대시보드</h2>
-            
-            <div style="width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1.2rem;">
-                <!-- Inputs -->
-                <div>
-                    <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">주제 또는 키워드</label>
-                    <input type="text" id="shorts-topic" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none; transition: border-color 0.2s;" placeholder="예: 우주에서 가장 큰 블랙홀의 비밀">
+            <div style="width: 100%; max-width: 900px; margin-bottom: 2rem;">
+                <!-- 6-step stepper -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 2rem;">
+                    <span id="st-1" style="color:var(--accent); font-weight:700; font-size:0.85rem">1. 설정</span>
+                    <span style="color:var(--border2)">></span>
+                    <span id="st-2" style="color:var(--muted); font-weight:600; font-size:0.85rem">2. 내레이션 대본</span>
+                    <span style="color:var(--border2)">></span>
+                    <span id="st-3" style="color:var(--muted); font-weight:600; font-size:0.85rem">3. 음성 생성</span>
+                    <span style="color:var(--border2)">></span>
+                    <span id="st-4" style="color:var(--muted); font-weight:600; font-size:0.85rem">4. 이미지 생성</span>
+                    <span style="color:var(--border2)">></span>
+                    <span id="st-5" style="color:var(--muted); font-weight:600; font-size:0.85rem">5. 영상 생성</span>
+                    <span style="color:var(--border2)">></span>
+                    <span id="st-6" style="color:var(--muted); font-weight:600; font-size:0.85rem">6. 자막 스타일</span>
                 </div>
-                <div style="display: flex; gap: 1rem;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">음성 (Voice)</label>
-                        <select id="shorts-voice" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none;">
-                            <option value="ko-KR-SunHiNeural" style="background:#0d0d14">여성 (SunHi)</option>
-                            <option value="ko-KR-InJoonNeural" style="background:#0d0d14">남성 (InJoon)</option>
-                        </select>
+            </div>
+
+            <!-- Configuration Form (Step 1) -->
+            <div id="shorts-config-step" style="width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--text);">유튜브 영상 설정 <span style="font-size:0.7rem; color:var(--muted); font-weight:400; margin-left:8px;">GLOBAL CONFIGURATOR</span></h3>
+                
+                <div style="display: flex; gap: 2rem;">
+                    <!-- Left Column -->
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 1.2rem;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">주제 / 키워드</label>
+                            <input type="text" id="shorts-topic" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;" placeholder="예: 우주 블랙홀의 비밀">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">화면 비율</label>
+                            <select id="shorts-ratio" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="9:16" style="background:#0d0d14">9:16 (틱톡, 릴스, 쇼츠)</option>
+                                <option value="16:9" style="background:#0d0d14">16:9 (유튜브, 데스크톱)</option>
+                                <option value="1:1" style="background:#0d0d14">1:1 (인스타그램)</option>
+                                <option value="3:4" style="background:#0d0d14">3:4</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">추천 스타일 (이미지 렌더링)</label>
+                            <select id="shorts-style" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="cartoon" style="background:#0d0d14">카툰 현실 (만화 스타일)</option>
+                                <option value="sketch" style="background:#0d0d14">스케치 스틱맨</option>
+                                <option value="anatomy" style="background:#0d0d14">신사 3D 해부</option>
+                                <option value="3d_animation" style="background:#0d0d14">말하는 사물 (3D 픽사 스타일)</option>
+                                <option value="realistic" style="background:#0d0d14">초실사 (Cinematic)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">이미지 생성 모델</label>
+                            <select id="shorts-img-model" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="fal-ai/nano-banana-pro" style="background:#0d0d14">Nano Banana Pro (우선 사용)</option>
+                                <option value="fal-ai/nano-banana-2" style="background:#0d0d14">Nano Banana 2</option>
+                                <option value="fal-ai/flux/schnell" style="background:#0d0d14">FLUX.1 Schnell (가장 빠름)</option>
+                                <option value="fal-ai/flux/dev" style="background:#0d0d14">FLUX.1 Dev</option>
+                                <option value="fal-ai/flux/pro" style="background:#0d0d14">FLUX.1 Pro</option>
+                                <option value="fal-ai/recraft-v3" style="background:#0d0d14">Recraft V3</option>
+                                <option value="fal-ai/ideogram/v3" style="background:#0d0d14">Ideogram V3</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">아바타 스타일</label>
-                        <select id="shorts-avatar" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none;">
-                            <option value="3d_animation" style="background:#0d0d14">3D 애니메이션 스타일</option>
-                            <option value="realistic" style="background:#0d0d14">실사 스타일</option>
-                            <option value="anime" style="background:#0d0d14">애니메이션 스타일</option>
-                        </select>
+                    <!-- Right Column -->
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 1.2rem;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">영상 길이 (자동 생성 목표)</label>
+                            <select id="shorts-length" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="30" style="background:#0d0d14">30초</option>
+                                <option value="60" selected style="background:#0d0d14">60초</option>
+                                <option value="90" style="background:#0d0d14">90초</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">컷 전환 속도</label>
+                            <select id="shorts-cut" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="fast" style="background:#0d0d14">빠르게 (~5초마다 컷 전환)</option>
+                                <option value="slow" style="background:#0d0d14">느리게 (~3-4문장마다 컷 전환)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">음성 (Voice) / 빠르기</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select id="shorts-voice" style="flex: 2; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                    <option value="ko-KR-SunHiNeural" style="background:#0d0d14">여성 (SunHi)</option>
+                                    <option value="ko-KR-InJoonNeural" style="background:#0d0d14">남성 (InJoon)</option>
+                                </select>
+                                <select id="shorts-voice-speed" style="flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                    <option value="normal" style="background:#0d0d14">보통</option>
+                                    <option value="fast" style="background:#0d0d14">빠르게</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">영상 생성 모델</label>
+                            <select id="shorts-vid-model" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="kling-3.0" style="background:#0d0d14">Kling 3.0</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <button onclick="generateShorts()" style="background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 0.9rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; margin-top: 0.5rem; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s;">
-                    쇼츠 영상 생성하기 ✨
+
+                <div style="margin-top: 1rem;">
+                    <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">자막 설정</label>
+                    <div style="display: flex; align-items: center; gap: 1rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size: 0.85rem; color: var(--text);">자막 포함 (영상에 자막 자동 합성)</span>
+                        <label class="mini-toggle" style="margin-left: auto;">
+                            <input type="checkbox" id="shorts-subtitles" checked>
+                            <span class="mini-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button onclick="generateShorts()" style="background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 1rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; margin-top: 1rem; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s;">
+                    설정 저장 완료 및 자동 생성 시작 ✨
                 </button>
             </div>
 
-            <!-- Progress Bar -->
-            <div id="shorts-progress-container" style="display: none; width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                    <span id="shorts-step-1" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">1. 대본 작성</span>
-                    <span id="shorts-step-2" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">2. 음성 합성</span>
-                    <span id="shorts-step-3" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">3. 아바타 생성</span>
-                    <span id="shorts-step-4" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">4. 립싱크 렌더링</span>
+            <!-- Progress Bar Tracker (Replaces Config step when generating) -->
+            <div id="shorts-progress-container" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
+                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; position: relative;">
+                    <div id="shorts-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border-radius: 4px; transition: width 0.5s ease;"></div>
                 </div>
-                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; position: relative;">
-                    <div id="shorts-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border-radius: 3px; transition: width 0.5s ease;"></div>
-                </div>
-                <div id="shorts-status-msg" style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text); font-weight: 500;">준비 중...</div>
+                <div id="shorts-status-msg" style="text-align: center; margin-top: 1.5rem; font-size: 0.95rem; color: var(--text); font-weight: 500;">진행 준비 중...</div>
             </div>
 
             <!-- Result -->
-            <div id="shorts-result-container" style="display: none; width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; flex-direction: column; align-items: center; gap: 1.5rem;">
-                <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text);">🎉 생성 완료!</h3>
+            <div id="shorts-result-container" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; flex-direction: column; align-items: center; gap: 1.5rem;">
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text);">🎉 최종 영상 생성 완료!</h3>
                 <video id="shorts-result-video" controls style="width: 100%; max-width: 320px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></video>
                 <a id="shorts-download-btn" href="#" download="motionpix_shorts.mp4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.7rem 1.5rem; color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;">
                     MP4 다운로드
@@ -1689,44 +1768,62 @@ async function generateShorts() {
         return;
     }
     
+    // Hide config form, show progress
+    document.getElementById('shorts-config-step').style.display = 'none';
     document.getElementById('shorts-progress-container').style.display = 'block';
     document.getElementById('shorts-result-container').style.display = 'none';
+    
     const bar = document.getElementById('shorts-progress-bar');
     const msg = document.getElementById('shorts-status-msg');
     
-    for(let i=1; i<=4; i++) {
-        document.getElementById(`shorts-step-${i}`).style.color = 'var(--muted)';
+    for(let i=2; i<=6; i++) {
+        document.getElementById(`st-${i}`).style.color = 'var(--muted)';
     }
 
     try {
-        document.getElementById('shorts-step-1').style.color = '#a78bfa';
-        msg.textContent = '대본 작성 중... (OpenAI gpt-4o-mini)';
-        bar.style.width = '20%';
+        document.getElementById('st-2').style.color = 'var(--accent)';
+        msg.textContent = '2/6 내레이션 대본 작성 중...';
+        bar.style.width = '15%';
 
+        const ratio = document.getElementById('shorts-ratio').value;
+        const style = document.getElementById('shorts-style').value;
+        const imgModel = document.getElementById('shorts-img-model').value;
+        const length = document.getElementById('shorts-length').value;
+        const cutSpeed = document.getElementById('shorts-cut').value;
         const voice = document.getElementById('shorts-voice').value;
-        const avatar = document.getElementById('shorts-avatar').value;
+        const voiceSpeed = document.getElementById('shorts-voice-speed').value;
+        const vidModel = document.getElementById('shorts-vid-model').value;
+        const useSubtitles = document.getElementById('shorts-subtitles').checked;
 
-        let progress = 20;
+        const requestData = { 
+            topic, ratio, style, imgModel, length, cutSpeed, 
+            voice, voiceSpeed, vidModel, useSubtitles 
+        };
+
+        let progress = 15;
         const interval = setInterval(() => {
-            progress += 3;
-            if (progress >= 30 && progress < 35) {
-                document.getElementById('shorts-step-2').style.color = '#a78bfa';
-                msg.textContent = '음성 합성 중... (Edge-TTS)';
-            } else if (progress >= 50 && progress < 55) {
-                document.getElementById('shorts-step-3').style.color = '#a78bfa';
-                msg.textContent = '아바타 이미지 생성 중... (Fal.ai FLUX)';
-            } else if (progress >= 75 && progress < 80) {
-                document.getElementById('shorts-step-4').style.color = '#a78bfa';
-                msg.textContent = '립싱크 영상 렌더링 중... (LivePortrait)';
+            progress += 2;
+            if (progress >= 30 && progress < 32) {
+                document.getElementById('st-3').style.color = 'var(--accent)';
+                msg.textContent = '3/6 음성 합성 중... (Edge-TTS)';
+            } else if (progress >= 50 && progress < 52) {
+                document.getElementById('st-4').style.color = 'var(--accent)';
+                msg.textContent = '4/6 아바타 이미지 생성 중... (Nano Banana fallback to FLUX)';
+            } else if (progress >= 70 && progress < 72) {
+                document.getElementById('st-5').style.color = 'var(--accent)';
+                msg.textContent = '5/6 최종 영상 렌더링 중...';
+            } else if (progress >= 85 && progress < 87) {
+                document.getElementById('st-6').style.color = 'var(--accent)';
+                msg.textContent = '6/6 자막 텍스트 오버레이 중...';
             }
             if (progress > 95) progress = 95;
             bar.style.width = progress + '%';
-        }, 1000);
+        }, 1200);
 
         const res = await fetch('/api/generate-shorts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify({ topic, voice, avatar })
+            body: JSON.stringify(requestData)
         });
         
         const data = await res.json();
@@ -1736,8 +1833,8 @@ async function generateShorts() {
 
         bar.style.width = '100%';
         msg.textContent = '생성 완료!';
-        for(let i=1; i<=4; i++) {
-            document.getElementById(`shorts-step-${i}`).style.color = '#10b981';
+        for(let i=1; i<=6; i++) {
+            document.getElementById(`st-${i}`).style.color = '#10b981'; // Green color for success
         }
         
         document.getElementById('shorts-result-container').style.display = 'flex';
@@ -1752,6 +1849,11 @@ async function generateShorts() {
         msg.textContent = '오류 발생: ' + e.message;
         bar.style.background = 'var(--danger)';
         showToast('쇼츠 생성 실패: ' + e.message);
+        // On error, let user try again
+        setTimeout(() => {
+            document.getElementById('shorts-progress-container').style.display = 'none';
+            document.getElementById('shorts-config-step').style.display = 'flex';
+        }, 3000);
     }
 }
 

@@ -2231,8 +2231,15 @@ import subprocess
 
 class ShortsRequest(BaseModel):
     topic: str
+    ratio: Optional[str] = "9:16"
+    style: Optional[str] = "cartoon"
+    imgModel: Optional[str] = "fal-ai/nano-banana-pro"
+    length: Optional[str] = "60"
+    cutSpeed: Optional[str] = "fast"
     voice: Optional[str] = "ko-KR-SunHiNeural"
-    avatar: Optional[str] = "3d_animation"
+    voiceSpeed: Optional[str] = "normal"
+    vidModel: Optional[str] = "kling-3.0"
+    useSubtitles: Optional[bool] = True
 
 @app.post("/api/generate-shorts")
 async def generate_shorts(req: ShortsRequest):
@@ -2243,14 +2250,42 @@ async def generate_shorts(req: ShortsRequest):
             return JSONResponse(status_code=500, content={"error": "OPENAI_API_KEY not configured"})
             
         sys_prompt = "You are a professional YouTube Shorts script writer. Write a 25-30 second monologue about the requested topic. Do not include any stage directions or character names. Just write the exact spoken words in Korean."
-        res_ai = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {openai_key}"},
-            json={"model": "gpt-4o-mini", "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": req.topic}]}
-        )
-        script = res_ai.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        script = None
+        # 1-A: Try OpenAI First
+        try:
+            res_ai = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {openai_key}"},
+                json={"model": "gpt-4o-mini", "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": req.topic}]},
+                timeout=15
+            )
+            if res_ai.status_code == 200:
+                script = res_ai.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            else:
+                print(f"OpenAI error: {res_ai.status_code} - {res_ai.text}")
+        except Exception as e:
+            print(f"OpenAI exception: {e}")
+
+        # 1-B: Fall-back to NVIDIA NIM
         if not script:
-            raise ValueError("Failed to generate script from OpenAI.")
+            print("OpenAI failed or rate-limited. Falling back to NVIDIA NIM (meta/llama-3.3-70b-instruct)...")
+            nvidia_key = os.getenv("NVIDIA_API_KEY")
+            if not nvidia_key:
+                raise ValueError("OpenAI failed and NVIDIA_API_KEY is not configured for fall-back.")
+            
+            res_nv = requests.post(
+                "https://integrate.api.nvidia.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {nvidia_key}"},
+                json={"model": "meta/llama-3.3-70b-instruct", "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": req.topic}], "max_tokens": 1024},
+                timeout=15
+            )
+            if res_nv.status_code == 200:
+                script = res_nv.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            else:
+                print(f"NVIDIA NIM error: {res_nv.status_code} - {res_nv.text}")
+
+        if not script:
+            raise ValueError("Failed to generate script from both OpenAI and NVIDIA NIM.")
 
         # Step 2: Voice Generation (Edge-TTS)
         tts_filename = f"shorts_tts_{uuid.uuid4().hex[:8]}.mp3"
@@ -2275,28 +2310,62 @@ async def generate_shorts(req: ShortsRequest):
         if not audio_url:
             raise ValueError("Failed to upload audio to Supabase.")
 
-        # Step 3: Avatar Generation (fal.ai FLUX)
+        # Step 3: Avatar Generation (fal.ai with Nano Banana Fallback)
         fal_key = os.getenv("FAL_KEY")
         if not fal_key:
             return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
 
         avatar_prompts = {
+            "cartoon": "cartoon reality style, comic book, 2d vector, cute character narrating, masterpiece, sharp focus, plain background",
+            "sketch": "sketch stickman, doodle style, whiteboard animation style narrator, clean lines",
+            "anatomy": "gentleman 3d anatomy, detailed, medical illustration style character, narrator",
             "3d_animation": "3d animation style, pixar style, high quality, front facing portrait of a cute character narrating, masterpiece, sharp focus, plain background",
-            "realistic": "hyper realistic portrait photography, front facing, professional lighting, cinematic, 8k resolution, photorealistic narrator, clean background",
-            "anime": "anime style, studio ghibli, high quality front facing portrait, colorful, detailed eyes, narrator, plain background"
+            "realistic": "hyper realistic portrait photography, front facing, professional lighting, cinematic, 8k resolution, photorealistic narrator, clean background"
         }
-        prompt = avatar_prompts.get(req.avatar, avatar_prompts["3d_animation"])
+        prompt = avatar_prompts.get(req.style, avatar_prompts["3d_animation"])
         
         fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
-        res_flux = requests.post(
-            "https://fal.run/fal-ai/flux/schnell",
-            headers=fal_headers,
-            json={"prompt": prompt, "image_size": "portrait_16_9"}
-        ).json()
         
-        avatar_img_url = res_flux.get("images", [{}])[0].get("url")
+        avatar_img_url = None
+        img_model = req.imgModel or "fal-ai/nano-banana-pro"
+        
+        # 3-A: Try requested model first (Nano Banana etc.)
+        try:
+            print(f"Trying image generation with {img_model}...")
+            # Remove fal-ai/ prefix if we need to hit a different endpoint, but user specified fal-ai/nano-banana-pro 
+            # so we append it directly to fal.run
+            res_flux = requests.post(
+                f"https://fal.run/{img_model}",
+                headers=fal_headers,
+                json={"prompt": prompt, "image_size": "portrait_16_9"},
+                timeout=20
+            )
+            if res_flux.status_code == 200:
+                avatar_img_url = res_flux.json().get("images", [{}])[0].get("url")
+            else:
+                print(f"{img_model} failed with status {res_flux.status_code}: {res_flux.text}")
+        except Exception as e:
+            print(f"Error calling {img_model}: {e}")
+
+        # 3-B: Fallback to fal-ai/flux/schnell
+        if not avatar_img_url and img_model != "fal-ai/flux/schnell":
+            print("Image generation failed. Falling back to fal-ai/flux/schnell...")
+            try:
+                res_fallback = requests.post(
+                    "https://fal.run/fal-ai/flux/schnell",
+                    headers=fal_headers,
+                    json={"prompt": prompt, "image_size": "portrait_16_9"},
+                    timeout=15
+                )
+                if res_fallback.status_code == 200:
+                    avatar_img_url = res_fallback.json().get("images", [{}])[0].get("url")
+                else:
+                    print(f"Fallback flux/schnell failed: {res_fallback.status_code}")
+            except Exception as e:
+                print(f"Fallback exception: {e}")
+
         if not avatar_img_url:
-            raise ValueError("Avatar image generation failed.")
+            raise ValueError("Avatar image generation failed across all models.")
 
         # Step 4: Lipsync Animation (fal.ai LivePortrait)
         res_lp = requests.post(
