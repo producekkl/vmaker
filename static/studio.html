@@ -607,13 +607,42 @@
                 </button>
             </div>
 
-            <!-- Progress Bar Tracker (Replaces Config step when generating) -->
-            <div id="shorts-progress-container" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
-                <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; position: relative;">
-                    <div id="shorts-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border-radius: 4px; transition: width 0.5s ease;"></div>
+
+            <!-- Step 2: Script -->
+            <div id="shorts-step-script" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 1rem;">📝 Step 2: 내레이션 대본</h3>
+                <textarea id="shorts-script-text" style="width: 100%; height: 200px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 1rem; color: var(--text); outline: none; margin-bottom: 1rem; line-height: 1.6; resize: vertical;"></textarea>
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="generateShortsVoice()" class="shorts-next-btn" style="flex: 1; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 1rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s;">
+                        대본 확인완료 및 다음 단계(음성 생성) 진행 ✨
+                    </button>
                 </div>
-                <div id="shorts-status-msg" style="text-align: center; margin-top: 1.5rem; font-size: 0.95rem; color: var(--text); font-weight: 500;">진행 준비 중...</div>
             </div>
+
+            <!-- Step 3: Voice -->
+            <div id="shorts-step-voice" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; flex-direction: column; align-items: center; gap: 1rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text);">🎙️ Step 3: 음성 생성 완료</h3>
+                <audio id="shorts-voice-audio" controls style="width: 100%; max-width: 400px;"></audio>
+                <button onclick="generateShortsImage()" class="shorts-next-btn" style="width: 100%; max-width: 400px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 1rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s; margin-top: 1rem;">
+                    음성 확인완료 및 다음 단계(이미지 생성) 진행 ✨
+                </button>
+            </div>
+
+            <!-- Step 4: Image -->
+            <div id="shorts-step-image" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; flex-direction: column; align-items: center; gap: 1rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text);">🖼️ Step 4: 아바타 이미지 생성 완료</h3>
+                <img id="shorts-image-preview" style="width: 100%; max-width: 320px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <button onclick="generateShortsVideo()" class="shorts-next-btn" style="width: 100%; max-width: 320px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 1rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s; margin-top: 1rem;">
+                    이미지 확인완료 및 다음 단계(최종 영상 렌더링) 진행 ✨
+                </button>
+            </div>
+
+            <!-- Progress Loader -->
+            <div id="shorts-step-loading" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
+                <div class="loader" style="border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+                <div id="shorts-loading-msg" style="color: var(--text); font-weight: 500;">진행 중...</div>
+            </div>
+
 
             <!-- Result -->
             <div id="shorts-result-container" style="display: none; width: 100%; max-width: 900px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; flex-direction: column; align-items: center; gap: 1.5rem;">
@@ -1762,99 +1791,149 @@ document.getElementById('nav-canvas').addEventListener('click', () => {
     document.getElementById('main-ctrl-bar').style.display = 'flex';
 });
 
-async function generateShorts() {
+let shortsState = {};
+
+function hideAllShortsSteps() {
+    document.getElementById('shorts-config-step').style.display = 'none';
+    document.getElementById('shorts-step-script').style.display = 'none';
+    document.getElementById('shorts-step-voice').style.display = 'none';
+    document.getElementById('shorts-step-image').style.display = 'none';
+    document.getElementById('shorts-result-container').style.display = 'none';
+    document.getElementById('shorts-step-loading').style.display = 'none';
+}
+
+function showShortsLoading(msg) {
+    hideAllShortsSteps();
+    document.getElementById('shorts-loading-msg').textContent = msg;
+    document.getElementById('shorts-step-loading').style.display = 'flex';
+}
+
+async function generateShorts() { // actually generates script
     const topic = document.getElementById('shorts-topic').value.trim();
     if (!topic) {
         showToast('주제 또는 키워드를 입력해주세요');
         return;
     }
     
-    // Hide config form, show progress
-    document.getElementById('shorts-config-step').style.display = 'none';
-    document.getElementById('shorts-progress-container').style.display = 'block';
-    document.getElementById('shorts-result-container').style.display = 'none';
-    
-    const bar = document.getElementById('shorts-progress-bar');
-    const msg = document.getElementById('shorts-status-msg');
-    
-    for(let i=2; i<=6; i++) {
-        document.getElementById(`st-${i}`).style.color = 'var(--muted)';
-    }
+    // Save configs
+    shortsState.topic = topic;
+    shortsState.ratio = document.getElementById('shorts-ratio').value;
+    shortsState.style = document.getElementById('shorts-style').value;
+    shortsState.imgModel = document.getElementById('shorts-img-model').value;
+    shortsState.length = document.getElementById('shorts-length').value;
+    shortsState.cutSpeed = document.getElementById('shorts-cut').value;
+    shortsState.voice = document.getElementById('shorts-voice').value;
+    shortsState.voiceSpeed = document.getElementById('shorts-voice-speed').value;
+    shortsState.vidModel = document.getElementById('shorts-vid-model').value;
+    shortsState.useSubtitles = document.getElementById('shorts-subtitles').checked;
+
+    for(let i=1; i<=6; i++) document.getElementById(`st-${i}`).style.color = 'var(--muted)';
+    document.getElementById('st-1').style.color = '#10b981';
+    document.getElementById('st-2').style.color = 'var(--accent)';
+
+    showShortsLoading('2/6 내레이션 대본 작성 중...');
 
     try {
-        document.getElementById('st-2').style.color = 'var(--accent)';
-        msg.textContent = '2/6 내레이션 대본 작성 중...';
-        bar.style.width = '15%';
-
-        const ratio = document.getElementById('shorts-ratio').value;
-        const style = document.getElementById('shorts-style').value;
-        const imgModel = document.getElementById('shorts-img-model').value;
-        const length = document.getElementById('shorts-length').value;
-        const cutSpeed = document.getElementById('shorts-cut').value;
-        const voice = document.getElementById('shorts-voice').value;
-        const voiceSpeed = document.getElementById('shorts-voice-speed').value;
-        const vidModel = document.getElementById('shorts-vid-model').value;
-        const useSubtitles = document.getElementById('shorts-subtitles').checked;
-
-        const requestData = { 
-            topic, ratio, style, imgModel, length, cutSpeed, 
-            voice, voiceSpeed, vidModel, useSubtitles 
-        };
-
-        let progress = 15;
-        const interval = setInterval(() => {
-            progress += 2;
-            if (progress >= 30 && progress < 32) {
-                document.getElementById('st-3').style.color = 'var(--accent)';
-                msg.textContent = '3/6 음성 합성 중... (Edge-TTS)';
-            } else if (progress >= 50 && progress < 52) {
-                document.getElementById('st-4').style.color = 'var(--accent)';
-                msg.textContent = '4/6 아바타 이미지 생성 중... (Nano Banana fallback to FLUX)';
-            } else if (progress >= 70 && progress < 72) {
-                document.getElementById('st-5').style.color = 'var(--accent)';
-                msg.textContent = '5/6 최종 영상 렌더링 중...';
-            } else if (progress >= 85 && progress < 87) {
-                document.getElementById('st-6').style.color = 'var(--accent)';
-                msg.textContent = '6/6 자막 텍스트 오버레이 중...';
-            }
-            if (progress > 95) progress = 95;
-            bar.style.width = progress + '%';
-        }, 1200);
-
-        const res = await fetch('/api/generate-shorts', {
+        const res = await fetch('/api/shorts/generate-script', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify({ topic: shortsState.topic, length: shortsState.length })
         });
-        
         const data = await res.json();
-        clearInterval(interval);
-        
         if (data.error) throw new Error(data.error);
-
-        bar.style.width = '100%';
-        msg.textContent = '생성 완료!';
-        for(let i=1; i<=6; i++) {
-            document.getElementById(`st-${i}`).style.color = '#10b981'; // Green color for success
-        }
         
-        document.getElementById('shorts-result-container').style.display = 'flex';
+        hideAllShortsSteps();
+        document.getElementById('shorts-script-text').value = data.script;
+        document.getElementById('shorts-step-script').style.display = 'block';
+    } catch (e) {
+        showToast('대본 생성 실패: ' + e.message);
+        hideAllShortsSteps();
+        document.getElementById('shorts-config-step').style.display = 'flex';
+    }
+}
+
+async function generateShortsVoice() {
+    shortsState.script = document.getElementById('shorts-script-text').value.trim();
+    
+    document.getElementById('st-2').style.color = '#10b981';
+    document.getElementById('st-3').style.color = 'var(--accent)';
+    
+    showShortsLoading('3/6 음성 합성 중... (Edge-TTS)');
+
+    try {
+        const res = await fetch('/api/shorts/generate-voice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ script: shortsState.script, voice: shortsState.voice, voiceSpeed: shortsState.voiceSpeed })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        shortsState.audio_url = data.audio_url;
+        hideAllShortsSteps();
+        document.getElementById('shorts-voice-audio').src = shortsState.audio_url;
+        document.getElementById('shorts-step-voice').style.display = 'flex';
+    } catch (e) {
+        showToast('음성 생성 실패: ' + e.message);
+        hideAllShortsSteps();
+        document.getElementById('shorts-step-script').style.display = 'block';
+    }
+}
+
+async function generateShortsImage() {
+    document.getElementById('st-3').style.color = '#10b981';
+    document.getElementById('st-4').style.color = 'var(--accent)';
+    
+    showShortsLoading('4/6 아바타 이미지 생성 중...');
+
+    try {
+        const res = await fetch('/api/shorts/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ style: shortsState.style, imgModel: shortsState.imgModel, ratio: shortsState.ratio })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        shortsState.avatar_url = data.avatar_url;
+        hideAllShortsSteps();
+        document.getElementById('shorts-image-preview').src = shortsState.avatar_url;
+        document.getElementById('shorts-step-image').style.display = 'flex';
+    } catch (e) {
+        showToast('이미지 생성 실패: ' + e.message);
+        hideAllShortsSteps();
+        document.getElementById('shorts-step-voice').style.display = 'flex';
+    }
+}
+
+async function generateShortsVideo() {
+    document.getElementById('st-4').style.color = '#10b981';
+    document.getElementById('st-5').style.color = 'var(--accent)';
+    
+    showShortsLoading('5/6 최종 영상 렌더링 중... (LivePortrait)');
+
+    try {
+        const res = await fetch('/api/shorts/generate-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ avatar_url: shortsState.avatar_url, audio_url: shortsState.audio_url, vidModel: shortsState.vidModel })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        document.getElementById('st-5').style.color = '#10b981';
+        document.getElementById('st-6').style.color = '#10b981';
+        
+        hideAllShortsSteps();
         const vid = document.getElementById('shorts-result-video');
         vid.src = data.video_url;
+        document.getElementById('shorts-download-btn').href = data.video_url;
+        document.getElementById('shorts-result-container').style.display = 'flex';
         vid.play();
-        
-        const dlBtn = document.getElementById('shorts-download-btn');
-        dlBtn.href = data.video_url;
-
     } catch (e) {
-        msg.textContent = '오류 발생: ' + e.message;
-        bar.style.background = 'var(--danger)';
-        showToast('쇼츠 생성 실패: ' + e.message);
-        // On error, let user try again
-        setTimeout(() => {
-            document.getElementById('shorts-progress-container').style.display = 'none';
-            document.getElementById('shorts-config-step').style.display = 'flex';
-        }, 3000);
+        showToast('영상 렌더링 실패: ' + e.message);
+        hideAllShortsSteps();
+        document.getElementById('shorts-step-image').style.display = 'flex';
     }
 }
 

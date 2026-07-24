@@ -2229,29 +2229,34 @@ def serve_feature(feature_id: str):
 # ====================================================================
 import subprocess
 
-class ShortsRequest(BaseModel):
+class ShortsScriptRequest(BaseModel):
     topic: str
-    ratio: Optional[str] = "9:16"
-    style: Optional[str] = "cartoon"
-    imgModel: Optional[str] = "fal-ai/nano-banana-pro"
     length: Optional[str] = "60"
-    cutSpeed: Optional[str] = "fast"
+
+class ShortsVoiceRequest(BaseModel):
+    script: str
     voice: Optional[str] = "ko-KR-SunHiNeural"
     voiceSpeed: Optional[str] = "normal"
-    vidModel: Optional[str] = "kling-3.0"
-    useSubtitles: Optional[bool] = True
 
-@app.post("/api/generate-shorts")
-async def generate_shorts(req: ShortsRequest):
+class ShortsImageRequest(BaseModel):
+    style: Optional[str] = "cartoon"
+    imgModel: Optional[str] = "fal-ai/nano-banana-pro"
+    ratio: Optional[str] = "9:16"
+
+class ShortsVideoRequest(BaseModel):
+    avatar_url: str
+    audio_url: str
+    vidModel: Optional[str] = "fal-ai/live-portrait"
+
+@app.post("/api/shorts/generate-script")
+async def shorts_generate_script(req: ShortsScriptRequest):
     try:
-        # Step 1: Script Generation (OpenAI)
         openai_key = os.getenv("OPENAI_API_KEY")
         if not openai_key:
             return JSONResponse(status_code=500, content={"error": "OPENAI_API_KEY not configured"})
             
         sys_prompt = "You are a professional YouTube Shorts script writer. Write a 25-30 second monologue about the requested topic. Do not include any stage directions or character names. Just write the exact spoken words in Korean."
         script = None
-        # 1-A: Try OpenAI First
         try:
             res_ai = requests.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -2266,7 +2271,6 @@ async def generate_shorts(req: ShortsRequest):
         except Exception as e:
             print(f"OpenAI exception: {e}")
 
-        # 1-B: Fall-back to NVIDIA NIM
         if not script:
             print("OpenAI failed or rate-limited. Falling back to NVIDIA NIM (meta/llama-3.3-70b-instruct)...")
             nvidia_key = os.getenv("NVIDIA_API_KEY")
@@ -2287,17 +2291,22 @@ async def generate_shorts(req: ShortsRequest):
         if not script:
             raise ValueError("Failed to generate script from both OpenAI and NVIDIA NIM.")
 
-        # Step 2: Voice Generation (Edge-TTS)
+        return {"script": script}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/api/shorts/generate-voice")
+async def shorts_generate_voice(req: ShortsVoiceRequest):
+    try:
         import tempfile
         tts_filename = f"shorts_tts_{uuid.uuid4().hex[:8]}.mp3"
         tts_path = os.path.join(tempfile.gettempdir(), tts_filename)
         
-        # Call edge-tts via subprocess
         try:
-            subprocess.run(["edge-tts", "--voice", req.voice, "--text", script, "--write-media", tts_path], check=True)
+            subprocess.run(["edge-tts", "--voice", req.voice, "--text", req.script, "--write-media", tts_path], check=True)
         except Exception as e:
             print(f"Edge-TTS CLI failed, trying python -m edge_tts: {e}")
-            subprocess.run(["python", "-m", "edge_tts", "--voice", req.voice, "--text", script, "--write-media", tts_path], check=True)
+            subprocess.run(["python", "-m", "edge_tts", "--voice", req.voice, "--text", req.script, "--write-media", tts_path], check=True)
 
         if not os.path.exists(tts_path):
             raise ValueError("TTS audio file was not created.")
@@ -2306,12 +2315,17 @@ async def generate_shorts(req: ShortsRequest):
             audio_bytes = f.read()
         os.remove(tts_path)
 
-        # Upload audio to Supabase Storage (required for fal.ai LivePortrait)
         audio_url = upload_to_supabase_storage(audio_bytes, f"shorts_audio/{tts_filename}", "audio/mpeg")
         if not audio_url:
             raise ValueError("Failed to upload audio to Supabase.")
+        
+        return {"audio_url": audio_url}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-        # Step 3: Avatar Generation (fal.ai with Nano Banana Fallback)
+@app.post("/api/shorts/generate-image")
+async def shorts_generate_image(req: ShortsImageRequest):
+    try:
         fal_key = os.getenv("FAL_KEY")
         if not fal_key:
             return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
@@ -2330,11 +2344,8 @@ async def generate_shorts(req: ShortsRequest):
         avatar_img_url = None
         img_model = req.imgModel or "fal-ai/nano-banana-pro"
         
-        # 3-A: Try requested model first (Nano Banana etc.)
         try:
             print(f"Trying image generation with {img_model}...")
-            # Remove fal-ai/ prefix if we need to hit a different endpoint, but user specified fal-ai/nano-banana-pro 
-            # so we append it directly to fal.run
             res_flux = requests.post(
                 f"https://fal.run/{img_model}",
                 headers=fal_headers,
@@ -2348,7 +2359,6 @@ async def generate_shorts(req: ShortsRequest):
         except Exception as e:
             print(f"Error calling {img_model}: {e}")
 
-        # 3-B: Fallback to fal-ai/flux/schnell
         if not avatar_img_url and img_model != "fal-ai/flux/schnell":
             print("Image generation failed. Falling back to fal-ai/flux/schnell...")
             try:
@@ -2368,15 +2378,24 @@ async def generate_shorts(req: ShortsRequest):
         if not avatar_img_url:
             raise ValueError("Avatar image generation failed across all models.")
 
-        # Step 4: Video Generation
+        return {"avatar_url": avatar_img_url}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/api/shorts/generate-video")
+async def shorts_generate_video(req: ShortsVideoRequest):
+    try:
+        fal_key = os.getenv("FAL_KEY")
+        if not fal_key:
+            return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
+        fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
+
         video_url = None
-        
         if req.vidModel == "fal-ai/live-portrait":
-            # Lipsync Animation (fal.ai LivePortrait)
             res_lp = requests.post(
                 "https://fal.run/fal-ai/live-portrait",
                 headers=fal_headers,
-                json={"image_url": avatar_img_url, "audio_url": audio_url}
+                json={"image_url": req.avatar_url, "audio_url": req.audio_url}
             ).json()
             video_url = res_lp.get("video", {}).get("url")
             if not video_url:
@@ -2384,8 +2403,7 @@ async def generate_shorts(req: ShortsRequest):
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
 
-        return {"video_url": video_url, "script": script, "audio_url": audio_url, "avatar_url": avatar_img_url}
-    
+        return {"video_url": video_url}
     except Exception as e:
-        print(f"[Shorts Maker Error] {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
