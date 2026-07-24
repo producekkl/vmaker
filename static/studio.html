@@ -558,6 +558,7 @@
                     </select>
 
                     <select class="model-select" id="ctrl-vid-quality" onchange="updateVidQuality(this.value)" style="display:none; padding:7px 8px;">
+                        <option value="480p">480p (Fast)</option>
                         <option value="std" selected>720p (Standard)</option>
                         <option value="pro">1080p (Pro)</option>
                     </select>
@@ -1297,7 +1298,8 @@ function startPolling(taskType, taskId, prompt, modelName) {
     const tickTimer = setInterval(() => {
         elapsed += 2;
         // Calculate estimated progress percentage (target ~60 seconds for completion)
-        const percent = Math.min(98, Math.floor((elapsed / 60) * 100));
+        const targetSeconds = taskType === "video" ? 180 : 60;
+          const percent = Math.min(98, Math.floor((elapsed / targetSeconds) * 100));
         timerEl.textContent = `진행률: ${percent}% (경과: ${elapsed}초)`;
     }, 2000);
 
@@ -1596,6 +1598,6 @@ function showToast(msg) {
 // =====================================================
 checkAuth();
 </script>
-<div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.005</div>
+<div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.006</div>
 </body>
 </html>

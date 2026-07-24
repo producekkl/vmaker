@@ -1508,7 +1508,8 @@ function startPolling(taskType, taskId, prompt, modelName) {
     const tickTimer = setInterval(() => {
         elapsed += 2;
         // Calculate estimated progress percentage (target ~60 seconds for completion)
-        const percent = Math.min(98, Math.floor((elapsed / 60) * 100));
+        const targetSeconds = taskType === "video" ? 180 : 60;
+          const percent = Math.min(98, Math.floor((elapsed / targetSeconds) * 100));
         timerEl.textContent = `진행률: ${percent}% (경과: ${elapsed}초)`;
     }, 2000);
 
@@ -2189,6 +2190,7 @@ checkAuth();
                         <div className="node-row">
                             <span>출력 해상도</span>
                             <select className="node-select" value={data.res || 'std'} onChange={(e) => onChange('res', e.target.value)}>
+                                <option value="480p">480p (Fast)</option>
                                 <option value="std">720p (Standard)</option>
                                 <option value="pro">1080p (High Quality)</option>
                             </select>
@@ -3139,6 +3141,6 @@ checkAuth();
 
 
 </script>
-<div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.005</div>
+<div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.006</div>
 </body>
 </html>
