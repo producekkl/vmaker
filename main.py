@@ -2404,7 +2404,7 @@ async def shorts_generate_video(req: ShortsVideoRequest):
             res_lp = requests.post(
                 "https://fal.run/fal-ai/hallo",
                 headers=fal_headers,
-                json={"image_url": req.avatar_url, "audio_url": req.audio_url}
+                json={"source_image_url": req.avatar_url, "audio_url": req.audio_url}
             )
             res_json = res_lp.json()
             video_url = res_json.get("video", {}).get("url")
