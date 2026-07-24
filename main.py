@@ -2438,7 +2438,9 @@ async def shorts_status(req: ShortsStatusRequest):
             video_url = res_payload.get("video", {}).get("url")
             return {"status": "COMPLETED", "video_url": video_url}
         elif status in ["IN_QUEUE", "IN_PROGRESS"]:
-            return {"status": status}
+            logs = res_json.get("logs", [])
+            latest_log = logs[-1].get("message") if logs else ""
+            return {"status": status, "log": latest_log}
         else:
             err_text = res.text
             if "face_detection_error" in err_text or "No face detected" in err_text:
