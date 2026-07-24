@@ -584,6 +584,7 @@
                         <div>
                             <label style="font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">영상 생성 모델</label>
                             <select id="shorts-vid-model" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 0.7rem 1rem; color: var(--text); outline: none;">
+                                <option value="fal-ai/live-portrait" style="background:#0d0d14">LivePortrait (fal.ai 립싱크)</option>
                                 <option value="kling-3.0" style="background:#0d0d14">Kling 3.0</option>
                             </select>
                         </div>
@@ -1858,6 +1859,12 @@ async function generateShorts() {
 }
 
 checkAuth();
+
+// Handle tab redirect from other pages
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('tab') === 'shorts') {
+    setTimeout(toggleShortsMaker, 100); // Slight delay to ensure DOM is ready
+}
 </script>
 <div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.006</div>
 </body>
