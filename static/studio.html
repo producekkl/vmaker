@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -1258,7 +1258,7 @@ async function generateVideo(prompt) {
 
         const isSeedance = model.includes('seedance') || model.includes('dreamina') || model.includes('byteplus');
         const apiEndpoint = isSeedance ? '/api/seedance/create' : '/api/kling/create';
-        const engineLabel = isSeedance ? 'Seedance 2.0 (OpenRouter)' : 'Kling AI';
+        const engineLabel = isSeedance ? 'Seedance 2.0' : 'Kling AI';
 
         showToast(`🎬 ${engineLabel} 비디오 생성 요청 중...`);
 
@@ -1302,7 +1302,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
     }, 2000);
 
     const poll = async () => {
-        if (elapsed >= 120) {
+        if (elapsed >= 600) {
             clearInterval(tickTimer);
             setUIState('failed');
             document.getElementById('preview-placeholder').style.display = 'flex';
@@ -1596,5 +1596,6 @@ function showToast(msg) {
 // =====================================================
 checkAuth();
 </script>
+<div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.005</div>
 </body>
 </html>
