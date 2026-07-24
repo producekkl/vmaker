@@ -2396,10 +2396,11 @@ async def shorts_generate_video(req: ShortsVideoRequest):
                 "https://fal.run/fal-ai/live-portrait",
                 headers=fal_headers,
                 json={"image_url": req.avatar_url, "audio_url": req.audio_url}
-            ).json()
-            video_url = res_lp.get("video", {}).get("url")
+            )
+            res_json = res_lp.json()
+            video_url = res_json.get("video", {}).get("url")
             if not video_url:
-                raise ValueError("LivePortrait rendering failed.")
+                raise ValueError(f"LivePortrait rendering failed: {res_lp.text}")
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
 
