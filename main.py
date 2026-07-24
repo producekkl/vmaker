@@ -2288,8 +2288,9 @@ async def generate_shorts(req: ShortsRequest):
             raise ValueError("Failed to generate script from both OpenAI and NVIDIA NIM.")
 
         # Step 2: Voice Generation (Edge-TTS)
+        import tempfile
         tts_filename = f"shorts_tts_{uuid.uuid4().hex[:8]}.mp3"
-        tts_path = os.path.join(os.getcwd(), tts_filename)
+        tts_path = os.path.join(tempfile.gettempdir(), tts_filename)
         
         # Call edge-tts via subprocess
         try:
@@ -2367,16 +2368,21 @@ async def generate_shorts(req: ShortsRequest):
         if not avatar_img_url:
             raise ValueError("Avatar image generation failed across all models.")
 
-        # Step 4: Lipsync Animation (fal.ai LivePortrait)
-        res_lp = requests.post(
-            "https://fal.run/fal-ai/live-portrait",
-            headers=fal_headers,
-            json={"image_url": avatar_img_url, "audio_url": audio_url}
-        ).json()
+        # Step 4: Video Generation
+        video_url = None
         
-        video_url = res_lp.get("video", {}).get("url")
-        if not video_url:
-            raise ValueError("LivePortrait rendering failed.")
+        if req.vidModel == "fal-ai/live-portrait":
+            # Lipsync Animation (fal.ai LivePortrait)
+            res_lp = requests.post(
+                "https://fal.run/fal-ai/live-portrait",
+                headers=fal_headers,
+                json={"image_url": avatar_img_url, "audio_url": audio_url}
+            ).json()
+            video_url = res_lp.get("video", {}).get("url")
+            if not video_url:
+                raise ValueError("LivePortrait rendering failed.")
+        else:
+            raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
 
         return {"video_url": video_url, "script": script, "audio_url": audio_url, "avatar_url": avatar_img_url}
     
