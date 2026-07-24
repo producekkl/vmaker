@@ -2435,7 +2435,24 @@ async def shorts_status(req: ShortsStatusRequest):
         
         if status == "COMPLETED":
             res_payload = requests.get(req.response_url, headers=fal_headers).json()
-            video_url = res_payload.get("video", {}).get("url")
+            
+            def find_url(obj):
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if k in ("url", "video_url", "video", "file_url") and isinstance(v, str) and v.startswith("http"):
+                            return v
+                    for v in obj.values():
+                        r = find_url(v)
+                        if r: return r
+                elif isinstance(obj, list):
+                    for item in obj:
+                        r = find_url(item)
+                        if r: return r
+                return None
+                
+            video_url = find_url(res_payload)
+            if not video_url:
+                return JSONResponse(status_code=500, content={"error": f"Failed to extract video URL from response: {res_payload}"})
             return {"status": "COMPLETED", "video_url": video_url}
         elif status in ["IN_QUEUE", "IN_PROGRESS"]:
             logs = res_json.get("logs", [])
