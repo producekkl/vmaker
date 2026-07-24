@@ -2223,3 +2223,94 @@ def serve_feature(feature_id: str):
     if os.path.exists(feature_path):
         return FileResponse(feature_path)
     raise HTTPException(status_code=404, detail="Feature page not found")
+
+# ====================================================================
+# YOUTUBE SHORTS MAKER API (4-Step Pipeline)
+# ====================================================================
+import subprocess
+
+class ShortsRequest(BaseModel):
+    topic: str
+    voice: Optional[str] = "ko-KR-SunHiNeural"
+    avatar: Optional[str] = "3d_animation"
+
+@app.post("/api/generate-shorts")
+async def generate_shorts(req: ShortsRequest):
+    try:
+        # Step 1: Script Generation (OpenAI)
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key:
+            return JSONResponse(status_code=500, content={"error": "OPENAI_API_KEY not configured"})
+            
+        sys_prompt = "You are a professional YouTube Shorts script writer. Write a 25-30 second monologue about the requested topic. Do not include any stage directions or character names. Just write the exact spoken words in Korean."
+        res_ai = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {openai_key}"},
+            json={"model": "gpt-4o-mini", "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": req.topic}]}
+        )
+        script = res_ai.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        if not script:
+            raise ValueError("Failed to generate script from OpenAI.")
+
+        # Step 2: Voice Generation (Edge-TTS)
+        tts_filename = f"shorts_tts_{uuid.uuid4().hex[:8]}.mp3"
+        tts_path = os.path.join(os.getcwd(), tts_filename)
+        
+        # Call edge-tts via subprocess
+        try:
+            subprocess.run(["edge-tts", "--voice", req.voice, "--text", script, "--write-media", tts_path], check=True)
+        except Exception as e:
+            print(f"Edge-TTS CLI failed, trying python -m edge_tts: {e}")
+            subprocess.run(["python", "-m", "edge_tts", "--voice", req.voice, "--text", script, "--write-media", tts_path], check=True)
+
+        if not os.path.exists(tts_path):
+            raise ValueError("TTS audio file was not created.")
+
+        with open(tts_path, "rb") as f:
+            audio_bytes = f.read()
+        os.remove(tts_path)
+
+        # Upload audio to Supabase Storage (required for fal.ai LivePortrait)
+        audio_url = upload_to_supabase_storage(audio_bytes, f"shorts_audio/{tts_filename}", "audio/mpeg")
+        if not audio_url:
+            raise ValueError("Failed to upload audio to Supabase.")
+
+        # Step 3: Avatar Generation (fal.ai FLUX)
+        fal_key = os.getenv("FAL_KEY")
+        if not fal_key:
+            return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
+
+        avatar_prompts = {
+            "3d_animation": "3d animation style, pixar style, high quality, front facing portrait of a cute character narrating, masterpiece, sharp focus, plain background",
+            "realistic": "hyper realistic portrait photography, front facing, professional lighting, cinematic, 8k resolution, photorealistic narrator, clean background",
+            "anime": "anime style, studio ghibli, high quality front facing portrait, colorful, detailed eyes, narrator, plain background"
+        }
+        prompt = avatar_prompts.get(req.avatar, avatar_prompts["3d_animation"])
+        
+        fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
+        res_flux = requests.post(
+            "https://fal.run/fal-ai/flux/schnell",
+            headers=fal_headers,
+            json={"prompt": prompt, "image_size": "portrait_16_9"}
+        ).json()
+        
+        avatar_img_url = res_flux.get("images", [{}])[0].get("url")
+        if not avatar_img_url:
+            raise ValueError("Avatar image generation failed.")
+
+        # Step 4: Lipsync Animation (fal.ai LivePortrait)
+        res_lp = requests.post(
+            "https://fal.run/fal-ai/live-portrait",
+            headers=fal_headers,
+            json={"image_url": avatar_img_url, "audio_url": audio_url}
+        ).json()
+        
+        video_url = res_lp.get("video", {}).get("url")
+        if not video_url:
+            raise ValueError("LivePortrait rendering failed.")
+
+        return {"video_url": video_url, "script": script, "audio_url": audio_url, "avatar_url": avatar_img_url}
+    
+    except Exception as e:
+        print(f"[Shorts Maker Error] {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})

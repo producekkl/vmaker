@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -464,6 +464,13 @@
                 <div id="canvas-projects-list" style="display: none; flex-direction: column; padding-left: 12px; margin-top: 4px; gap: 4px;">
                     <!-- Items injected here -->
                 </div>
+
+                <div class="nav-item" id="nav-shorts" onclick="toggleShortsMaker()" style="justify-content: space-between; margin-top: 12px;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <svg viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
+                        유튜브 쇼츠 자동생성
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -482,8 +489,64 @@
     <!-- ===== CENTER GENERATION PANEL ===== -->
     <div class="center-panel">
 
+        <!-- Shorts Maker Area (Hidden by default) -->
+        <div id="shorts-maker-area" style="display: none; flex: 1; flex-direction: column; padding: 2rem; overflow-y: auto; align-items: center;">
+            <h2 style="font-size: 1.8rem; font-family: var(--font-display); font-weight: 800; background: linear-gradient(135deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1.5rem;">유튜브 쇼츠 자동화 대시보드</h2>
+            
+            <div style="width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1.2rem;">
+                <!-- Inputs -->
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">주제 또는 키워드</label>
+                    <input type="text" id="shorts-topic" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none; transition: border-color 0.2s;" placeholder="예: 우주에서 가장 큰 블랙홀의 비밀">
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">음성 (Voice)</label>
+                        <select id="shorts-voice" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none;">
+                            <option value="ko-KR-SunHiNeural" style="background:#0d0d14">여성 (SunHi)</option>
+                            <option value="ko-KR-InJoonNeural" style="background:#0d0d14">남성 (InJoon)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 0.5rem; display: block;">아바타 스타일</label>
+                        <select id="shorts-avatar" style="width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 0.8rem 1rem; color: var(--text); font-family: var(--font-ui); font-size: 0.95rem; outline: none;">
+                            <option value="3d_animation" style="background:#0d0d14">3D 애니메이션 스타일</option>
+                            <option value="realistic" style="background:#0d0d14">실사 스타일</option>
+                            <option value="anime" style="background:#0d0d14">애니메이션 스타일</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="generateShorts()" style="background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 0.9rem; color: white; font-size: 1rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; margin-top: 0.5rem; box-shadow: 0 4px 20px rgba(139,92,246,0.3); transition: all 0.2s;">
+                    쇼츠 영상 생성하기 ✨
+                </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="shorts-progress-container" style="display: none; width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <span id="shorts-step-1" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">1. 대본 작성</span>
+                    <span id="shorts-step-2" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">2. 음성 합성</span>
+                    <span id="shorts-step-3" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">3. 아바타 생성</span>
+                    <span id="shorts-step-4" style="font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: color 0.3s;">4. 립싱크 렌더링</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; position: relative;">
+                    <div id="shorts-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899); border-radius: 3px; transition: width 0.5s ease;"></div>
+                </div>
+                <div id="shorts-status-msg" style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text); font-weight: 500;">준비 중...</div>
+            </div>
+
+            <!-- Result -->
+            <div id="shorts-result-container" style="display: none; width: 100%; max-width: 800px; background: rgba(12,12,18,0.7); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; flex-direction: column; align-items: center; gap: 1.5rem;">
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text);">🎉 생성 완료!</h3>
+                <video id="shorts-result-video" controls style="width: 100%; max-width: 320px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);"></video>
+                <a id="shorts-download-btn" href="#" download="motionpix_shorts.mp4" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.7rem 1.5rem; color: var(--text); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: all 0.2s;">
+                    MP4 다운로드
+                </a>
+            </div>
+        </div>
+
         <!-- Preview area -->
-        <div class="preview-area">
+        <div class="preview-area" id="main-preview-area">
             <div class="preview-box" id="preview-box"
                 ondragover="event.preventDefault(); this.classList.add('drag-active');"
                 ondragleave="this.classList.remove('drag-active');"
@@ -527,7 +590,7 @@
         </div>
 
         <!-- Control Bar -->
-        <div class="ctrl-bar">
+        <div class="ctrl-bar" id="main-ctrl-bar">
             <div class="ctrl-top-row">
                 <div class="ctrl-left-tools">
                     <select class="model-select" id="sel-model" onchange="updateCostDisplay()">
@@ -1596,6 +1659,102 @@ function showToast(msg) {
 // =====================================================
 // INIT
 // =====================================================
+// =====================================================
+// SHORTS MAKER
+// =====================================================
+function toggleShortsMaker() {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('nav-shorts').classList.add('active');
+    document.getElementById('main-preview-area').style.display = 'none';
+    document.getElementById('main-ctrl-bar').style.display = 'none';
+    document.getElementById('shorts-maker-area').style.display = 'flex';
+}
+
+// Intercept other nav clicks to restore default UI
+document.getElementById('nav-studio').addEventListener('click', () => {
+    document.getElementById('shorts-maker-area').style.display = 'none';
+    document.getElementById('main-preview-area').style.display = 'flex';
+    document.getElementById('main-ctrl-bar').style.display = 'flex';
+});
+document.getElementById('nav-canvas').addEventListener('click', () => {
+    document.getElementById('shorts-maker-area').style.display = 'none';
+    document.getElementById('main-preview-area').style.display = 'flex';
+    document.getElementById('main-ctrl-bar').style.display = 'flex';
+});
+
+async function generateShorts() {
+    const topic = document.getElementById('shorts-topic').value.trim();
+    if (!topic) {
+        showToast('주제 또는 키워드를 입력해주세요');
+        return;
+    }
+    
+    document.getElementById('shorts-progress-container').style.display = 'block';
+    document.getElementById('shorts-result-container').style.display = 'none';
+    const bar = document.getElementById('shorts-progress-bar');
+    const msg = document.getElementById('shorts-status-msg');
+    
+    for(let i=1; i<=4; i++) {
+        document.getElementById(`shorts-step-${i}`).style.color = 'var(--muted)';
+    }
+
+    try {
+        document.getElementById('shorts-step-1').style.color = '#a78bfa';
+        msg.textContent = '대본 작성 중... (OpenAI gpt-4o-mini)';
+        bar.style.width = '20%';
+
+        const voice = document.getElementById('shorts-voice').value;
+        const avatar = document.getElementById('shorts-avatar').value;
+
+        let progress = 20;
+        const interval = setInterval(() => {
+            progress += 3;
+            if (progress >= 30 && progress < 35) {
+                document.getElementById('shorts-step-2').style.color = '#a78bfa';
+                msg.textContent = '음성 합성 중... (Edge-TTS)';
+            } else if (progress >= 50 && progress < 55) {
+                document.getElementById('shorts-step-3').style.color = '#a78bfa';
+                msg.textContent = '아바타 이미지 생성 중... (Fal.ai FLUX)';
+            } else if (progress >= 75 && progress < 80) {
+                document.getElementById('shorts-step-4').style.color = '#a78bfa';
+                msg.textContent = '립싱크 영상 렌더링 중... (LivePortrait)';
+            }
+            if (progress > 95) progress = 95;
+            bar.style.width = progress + '%';
+        }, 1000);
+
+        const res = await fetch('/api/generate-shorts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ topic, voice, avatar })
+        });
+        
+        const data = await res.json();
+        clearInterval(interval);
+        
+        if (data.error) throw new Error(data.error);
+
+        bar.style.width = '100%';
+        msg.textContent = '생성 완료!';
+        for(let i=1; i<=4; i++) {
+            document.getElementById(`shorts-step-${i}`).style.color = '#10b981';
+        }
+        
+        document.getElementById('shorts-result-container').style.display = 'flex';
+        const vid = document.getElementById('shorts-result-video');
+        vid.src = data.video_url;
+        vid.play();
+        
+        const dlBtn = document.getElementById('shorts-download-btn');
+        dlBtn.href = data.video_url;
+
+    } catch (e) {
+        msg.textContent = '오류 발생: ' + e.message;
+        bar.style.background = 'var(--danger)';
+        showToast('쇼츠 생성 실패: ' + e.message);
+    }
+}
+
 checkAuth();
 </script>
 <div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.006</div>
