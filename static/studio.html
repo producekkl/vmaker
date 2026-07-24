@@ -1919,12 +1919,13 @@ async function generateShortsVideo() {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         const statusUrl = data.status_url;
-        showShortsLoading('5/6 최종 영상 렌더링 중... (최대 1~2분 소요)');
+        const responseUrl = data.response_url;
+        showShortsLoading('5/6 최종 영상 렌더링 중... (최대 3~5분 소요)');
         while (true) {
             const statusRes = await fetch('/api/shorts/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-                body: JSON.stringify({ status_url: statusUrl })
+                body: JSON.stringify({ status_url: statusUrl, response_url: responseUrl })
             });
             const statusData = await statusRes.json();
             if (statusData.error) throw new Error(statusData.error);

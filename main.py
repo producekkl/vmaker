@@ -2392,6 +2392,7 @@ async def shorts_generate_image(req: ShortsImageRequest):
 
 class ShortsStatusRequest(BaseModel):
     status_url: str
+    response_url: str
 
 @app.post("/api/shorts/generate-video")
 async def shorts_generate_video(req: ShortsVideoRequest):
@@ -2409,10 +2410,11 @@ async def shorts_generate_video(req: ShortsVideoRequest):
             )
             res_json = res_lp.json()
             status_url = res_json.get("status_url")
+            response_url = res_json.get("response_url")
             request_id = res_json.get("request_id")
             if not status_url:
                 raise ValueError(f"Failed to queue lipsync task: {res_lp.text}")
-            return {"status_url": status_url, "request_id": request_id}
+            return {"status_url": status_url, "response_url": response_url, "request_id": request_id}
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
     except Exception as e:
@@ -2429,11 +2431,11 @@ async def shorts_status(req: ShortsStatusRequest):
         res = requests.get(req.status_url, headers=fal_headers)
         res_json = res.json()
         
-        # 'status' will be 'IN_QUEUE', 'IN_PROGRESS', or 'COMPLETED'
         status = res_json.get("status")
         
         if status == "COMPLETED":
-            video_url = res_json.get("video", {}).get("url")
+            res_payload = requests.get(req.response_url, headers=fal_headers).json()
+            video_url = res_payload.get("video", {}).get("url")
             return {"status": "COMPLETED", "video_url": video_url}
         elif status in ["IN_QUEUE", "IN_PROGRESS"]:
             return {"status": status}
