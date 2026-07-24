@@ -503,6 +503,8 @@
                         
                         showSuccess("로그인 성공! 대시보드로 이동합니다.");
                         setTimeout(() => { window.location.href = "/motionpix"; }, 800);
+                    } else {
+                        showError("이메일 인증이 필요합니다. 메일함을 확인해주세요.");
                     }
                 } catch (err) {
                     showError(err.message || "로그인 도중 에러가 발생했습니다.");

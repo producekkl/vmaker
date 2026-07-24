@@ -1469,7 +1469,7 @@ async function generateVideo(prompt) {
 
         const isSeedance = model.includes('seedance') || model.includes('dreamina') || model.includes('byteplus');
         const apiEndpoint = isSeedance ? '/api/seedance/create' : '/api/kling/create';
-        const engineLabel = isSeedance ? 'Seedance 2.0' : 'Kling AI';
+        const engineLabel = isSeedance ? 'Seedance 2.0 (OpenRouter)' : 'Kling AI';
 
         showToast(`🎬 ${engineLabel} 비디오 생성 요청 중...`);
 
@@ -3139,6 +3139,5 @@ checkAuth();
 
 
 </script>
-    <div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.003</div>
 </body>
 </html>
