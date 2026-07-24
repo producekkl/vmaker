@@ -2344,12 +2344,20 @@ async def shorts_generate_image(req: ShortsImageRequest):
         avatar_img_url = None
         img_model = req.imgModel or "fal-ai/nano-banana-pro"
         
+        # Map req.ratio to fal's image_size
+        size_map = {
+            "9:16": "portrait_16_9",
+            "16:9": "landscape_16_9",
+            "1:1": "square_hd"
+        }
+        image_size = size_map.get(req.ratio, "portrait_16_9")
+        
         try:
             print(f"Trying image generation with {img_model}...")
             res_flux = requests.post(
                 f"https://fal.run/{img_model}",
                 headers=fal_headers,
-                json={"prompt": prompt, "image_size": "portrait_16_9"},
+                json={"prompt": prompt, "image_size": image_size},
                 timeout=20
             )
             if res_flux.status_code == 200:
@@ -2365,7 +2373,7 @@ async def shorts_generate_image(req: ShortsImageRequest):
                 res_fallback = requests.post(
                     "https://fal.run/fal-ai/flux/schnell",
                     headers=fal_headers,
-                    json={"prompt": prompt, "image_size": "portrait_16_9"},
+                    json={"prompt": prompt, "image_size": image_size},
                     timeout=15
                 )
                 if res_fallback.status_code == 200:
@@ -2392,11 +2400,11 @@ async def shorts_generate_video(req: ShortsVideoRequest):
 
         video_url = None
         if req.vidModel == "fal-ai/live-portrait" or req.vidModel == "fal-ai/sync-lipsync":
-            # For audio-driven lipsync, fal-ai/sync-lipsync takes video_url (which can be an image) and audio_url
+            # For audio-driven image animation, use fal-ai/hallo
             res_lp = requests.post(
-                "https://fal.run/fal-ai/sync-lipsync",
+                "https://fal.run/fal-ai/hallo",
                 headers=fal_headers,
-                json={"video_url": req.avatar_url, "audio_url": req.audio_url}
+                json={"image_url": req.avatar_url, "audio_url": req.audio_url}
             )
             res_json = res_lp.json()
             video_url = res_json.get("video", {}).get("url")
