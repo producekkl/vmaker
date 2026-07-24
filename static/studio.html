@@ -1909,9 +1909,7 @@ async function generateShortsImage() {
 async function generateShortsVideo() {
     document.getElementById('st-4').style.color = '#10b981';
     document.getElementById('st-5').style.color = 'var(--accent)';
-    
-    showShortsLoading('5/6 최종 영상 렌더링 중... (LivePortrait)');
-
+    showShortsLoading('5/6 최종 영상 렌더링 준비중... (LivePortrait)');
     try {
         const res = await fetch('/api/shorts/generate-video', {
             method: 'POST',
@@ -1920,16 +1918,29 @@ async function generateShortsVideo() {
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        
-        document.getElementById('st-5').style.color = '#10b981';
-        document.getElementById('st-6').style.color = '#10b981';
-        
-        hideAllShortsSteps();
-        const vid = document.getElementById('shorts-result-video');
-        vid.src = data.video_url;
-        document.getElementById('shorts-download-btn').href = data.video_url;
-        document.getElementById('shorts-result-container').style.display = 'flex';
-        vid.play();
+        const statusUrl = data.status_url;
+        showShortsLoading('5/6 최종 영상 렌더링 중... (최대 1~2분 소요)');
+        while (true) {
+            const statusRes = await fetch('/api/shorts/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                body: JSON.stringify({ status_url: statusUrl })
+            });
+            const statusData = await statusRes.json();
+            if (statusData.error) throw new Error(statusData.error);
+            if (statusData.status === 'COMPLETED') {
+                document.getElementById('st-5').style.color = '#10b981';
+                document.getElementById('st-6').style.color = '#10b981';
+                hideAllShortsSteps();
+                const vid = document.getElementById('shorts-result-video');
+                vid.src = statusData.video_url;
+                document.getElementById('shorts-download-btn').href = statusData.video_url;
+                document.getElementById('shorts-result-container').style.display = 'flex';
+                vid.play();
+                break;
+            }
+            await new Promise(r => setTimeout(r, 3000));
+        }
     } catch (e) {
         showToast('영상 렌더링 실패: ' + e.message);
         hideAllShortsSteps();

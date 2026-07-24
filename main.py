@@ -2390,6 +2390,9 @@ async def shorts_generate_image(req: ShortsImageRequest):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+class ShortsStatusRequest(BaseModel):
+    status_url: str
+
 @app.post("/api/shorts/generate-video")
 async def shorts_generate_video(req: ShortsVideoRequest):
     try:
@@ -2398,25 +2401,48 @@ async def shorts_generate_video(req: ShortsVideoRequest):
             return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
         fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
 
-        video_url = None
         if req.vidModel == "fal-ai/live-portrait" or req.vidModel == "fal-ai/sync-lipsync":
-            # For audio-driven image animation, use fal-ai/hallo
             res_lp = requests.post(
-                "https://fal.run/fal-ai/hallo",
+                "https://queue.fal.run/fal-ai/hallo",
                 headers=fal_headers,
                 json={"source_image_url": req.avatar_url, "audio_url": req.audio_url}
             )
             res_json = res_lp.json()
-            video_url = res_json.get("video", {}).get("url")
-            if not video_url:
-                err_text = res_lp.text
-                if "face_detection_error" in err_text or "No face detected" in err_text:
-                    raise ValueError("이미지에서 얼굴이 명확하게 감지되지 않았습니다. 눈/코/입이 뚜렷한 정면 인물 이미지로 다시 생성해 주세요.")
-                raise ValueError(f"Lipsync rendering failed: {err_text}")
+            status_url = res_json.get("status_url")
+            request_id = res_json.get("request_id")
+            if not status_url:
+                raise ValueError(f"Failed to queue lipsync task: {res_lp.text}")
+            return {"status_url": status_url, "request_id": request_id}
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
-        return {"video_url": video_url}
+@app.post("/api/shorts/status")
+async def shorts_status(req: ShortsStatusRequest):
+    try:
+        fal_key = os.getenv("FAL_KEY")
+        if not fal_key:
+            return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
+        fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
+
+        res = requests.get(req.status_url, headers=fal_headers)
+        res_json = res.json()
+        
+        # 'status' will be 'IN_QUEUE', 'IN_PROGRESS', or 'COMPLETED'
+        status = res_json.get("status")
+        
+        if status == "COMPLETED":
+            video_url = res_json.get("video", {}).get("url")
+            return {"status": "COMPLETED", "video_url": video_url}
+        elif status in ["IN_QUEUE", "IN_PROGRESS"]:
+            return {"status": status}
+        else:
+            err_text = res.text
+            if "face_detection_error" in err_text or "No face detected" in err_text:
+                return JSONResponse(status_code=400, content={"error": "이미지에서 얼굴이 명확하게 감지되지 않았습니다. 눈/코/입이 뚜렷한 정면 인물 이미지로 다시 생성해 주세요."})
+            return JSONResponse(status_code=500, content={"error": f"Lipsync rendering failed: {err_text}"})
+            
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
