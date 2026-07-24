@@ -2391,16 +2391,17 @@ async def shorts_generate_video(req: ShortsVideoRequest):
         fal_headers = {"Authorization": f"Key {fal_key}", "Content-Type": "application/json"}
 
         video_url = None
-        if req.vidModel == "fal-ai/live-portrait":
+        if req.vidModel == "fal-ai/live-portrait" or req.vidModel == "fal-ai/sync-lipsync":
+            # For audio-driven lipsync, fal-ai/sync-lipsync takes video_url (which can be an image) and audio_url
             res_lp = requests.post(
-                "https://fal.run/fal-ai/live-portrait",
+                "https://fal.run/fal-ai/sync-lipsync",
                 headers=fal_headers,
-                json={"image_url": req.avatar_url, "audio_url": req.audio_url}
+                json={"video_url": req.avatar_url, "audio_url": req.audio_url}
             )
             res_json = res_lp.json()
             video_url = res_json.get("video", {}).get("url")
             if not video_url:
-                raise ValueError(f"LivePortrait rendering failed: {res_lp.text}")
+                raise ValueError(f"Lipsync rendering failed: {res_lp.text}")
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
 
