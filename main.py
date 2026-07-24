@@ -2331,11 +2331,11 @@ async def shorts_generate_image(req: ShortsImageRequest):
             return JSONResponse(status_code=500, content={"error": "FAL_KEY not configured"})
 
         avatar_prompts = {
-            "cartoon": "cartoon reality style, comic book, 2d vector, cute character narrating, masterpiece, sharp focus, plain background",
-            "sketch": "sketch stickman, doodle style, whiteboard animation style narrator, clean lines",
-            "anatomy": "gentleman 3d anatomy, detailed, medical illustration style character, narrator",
-            "3d_animation": "3d animation style, pixar style, high quality, front facing portrait of a cute character narrating, masterpiece, sharp focus, plain background",
-            "realistic": "hyper realistic portrait photography, front facing, professional lighting, cinematic, 8k resolution, photorealistic narrator, clean background"
+            "cartoon": "cartoon reality style, comic book, 2d vector, cute character narrating, front facing portrait, clearly visible face, distinct eyes, nose, and mouth, masterpiece, sharp focus, plain background",
+            "sketch": "sketch stickman but with a large clearly visible human-like face, distinct eyes, nose, and mouth, front facing portrait, doodle style, whiteboard animation style narrator, clean lines",
+            "anatomy": "gentleman 3d anatomy, front facing portrait, clearly visible face, distinct eyes, nose, and mouth, detailed, medical illustration style character, narrator",
+            "3d_animation": "3d animation style, pixar style, high quality, front facing portrait of a cute character narrating, clearly visible face, distinct eyes, nose, and mouth, masterpiece, sharp focus, plain background",
+            "realistic": "hyper realistic portrait photography, front facing, clearly visible face, distinct eyes, nose, and mouth, professional lighting, cinematic, 8k resolution, photorealistic narrator, clean background"
         }
         prompt = avatar_prompts.get(req.style, avatar_prompts["3d_animation"])
         
@@ -2409,7 +2409,10 @@ async def shorts_generate_video(req: ShortsVideoRequest):
             res_json = res_lp.json()
             video_url = res_json.get("video", {}).get("url")
             if not video_url:
-                raise ValueError(f"Lipsync rendering failed: {res_lp.text}")
+                err_text = res_lp.text
+                if "face_detection_error" in err_text or "No face detected" in err_text:
+                    raise ValueError("이미지에서 얼굴이 명확하게 감지되지 않았습니다. 눈/코/입이 뚜렷한 정면 인물 이미지로 다시 생성해 주세요.")
+                raise ValueError(f"Lipsync rendering failed: {err_text}")
         else:
             raise ValueError(f"Video model {req.vidModel} is not yet supported in the automatic pipeline.")
 
