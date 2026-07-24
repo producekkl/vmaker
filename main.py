@@ -248,7 +248,7 @@ async def auth_middleware(request: Request, call_next):
     path = request.url.path
     # Public routes - no auth needed
     public_paths = ("/api/auth/register-profile", "/api/supabase/config", "/health", "/", "/motionpix", "/login", "/api/assets", "/canvas", "/api/workflow/execute", "/api/workflow/node-execute", "/api/download/proxy", "/api/gemini/image", "/api/kling/create", "/api/generations/save")
-    if path in public_paths or path.startswith("/static/") or path.startswith("/features/") or path.startswith("/api/kling/") or path.startswith("/api/gemini/") or path.startswith("/api/nanobanana/") or path.startswith("/api/canvas/"):
+    if path in public_paths or path.startswith("/static/") or path.startswith("/features/") or path.startswith("/api/kling/") or path.startswith("/api/gemini/") or path.startswith("/api/nanobanana/") or path.startswith("/api/canvas/") or path.startswith("/api/shorts/"):
         return await call_next(request)
 
     # Extract Bearer token from Authorization header
