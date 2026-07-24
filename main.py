@@ -317,17 +317,32 @@ def create_video(req: CreateVideoRequest):
 
         contents = [{"type": "text", "text": translate_prompt_to_english(req.prompt)}]
         if req.image and req.image.strip():
-            pub_url = ensure_public_url(req.image.strip(), "seedance_input.jpg")
+            image_val = req.image.strip()
+            if image_val.startswith("data:image/"):
+                img_url = image_val
+            else:
+                img_url = ensure_public_url(image_val, "seedance_input.jpg")
             contents.append({
                 "type": "image_url",
-                "image_url": {"url": pub_url}
+                "image_url": {"url": img_url}
             })
 
         sound_on = str(req.sound).lower() in ("on", "true", "1")
+        
+        # map UI mode to resolution
+        resolution = "720p" # default to std
+        if req.mode == "480p":
+            resolution = "480p"
+        elif req.mode == "pro":
+            resolution = "1080p"
+        elif req.mode == "4k":
+            resolution = "4k"
+            
         payload = {
             "model": seedance_model,
             "content": contents,
-            "generate_audio": sound_on
+            "generate_audio": sound_on,
+            "resolution": resolution
         }
 
         try:
