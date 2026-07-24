@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MotionPix Studio - AI ?�진 &amp; ?�상 ?�성</title>
-    <meta name="description" content="MotionPix AI Studio - 최고 ?��???AI ?��?지 �??�상 ?�성 ?�구">
+    <title>MotionPix Studio - AI 사진 &amp; 영상 생성</title>
+    <meta name="description" content="MotionPix AI Studio - 최고 수준의 AI 이미지 및 영상 생성 도구">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -763,7 +763,7 @@
             <span class="status-dot" id="status-dot"></span>
             <span id="status-text">Connecting...</span>
         </div>
-        <button class="btn-logout" id="btn-logout" onclick="handleLogout()">로그?�웃</button>
+        <button class="btn-logout" id="btn-logout" onclick="handleLogout()">로그아웃</button>
     </div>
 </header>
 
@@ -775,22 +775,22 @@
         <div class="left-panel-top">
 
             <div class="nav-section">
-                <div class="nav-section-title">?�성 모드</div>
+                <div class="nav-section-title">생성 모드</div>
                 <div class="nav-item" id="nav-studio" onclick="toggleStudioAccordion()" style="justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
                         <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                        AI ?�성
+                        AI 생성
                     </div>
                     <svg id="studio-acc-icon" style="width:14px; height:14px; transition: transform 0.2s; transform: rotate(180deg);" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
                 
-                <!-- AI ?�성 ?�위 메뉴 (?�정 컨트�?바로 ?�동?? -->
+                <!-- AI 생성 하위 메뉴 (설정 컨트롤 바로 이동됨) -->
                 <div id="studio-submenu" style="display: none;"></div>
 
                 <div class="nav-item active" id="nav-canvas" onclick="toggleCanvasAccordion()" style="justify-content: space-between; margin-top: 12px;">
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
                         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-                        캔버???�크?�로??
+                        캔버스 워크플로우
                     </div>
                     <svg id="canvas-acc-icon" style="width:14px; height:14px; transition: transform 0.2s;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
@@ -806,8 +806,8 @@
             <div class="user-pill" onclick="handleLogout()">
                 <div class="user-avatar" id="user-avatar-char">U</div>
                 <div class="user-info">
-                    <div class="user-name" id="user-email-display">?�용??/div>
-                    <div class="user-plan">??Pro Plan</div>
+                    <div class="user-name" id="user-email-display">사용자</div>
+                    <div class="user-plan">✨ Pro Plan</div>
                 </div>
             </div>
         </div>
@@ -820,11 +820,11 @@
 <!-- ===== RIGHT GALLERY PANEL ===== -->
     <div class="right-panel">
         <div class="gallery-header">
-            <span class="gallery-title">?���??�성 결과�?/span>
+            <span class="gallery-title">🖼️ 생성 결과물</span>
             <div class="gallery-tabs">
-                <button class="gallery-tab active" onclick="filterGallery('all')">?�체</button>
-                <button class="gallery-tab" onclick="filterGallery('image')">?�진</button>
-                <button class="gallery-tab" onclick="filterGallery('video')">?�상</button>
+                <button class="gallery-tab active" onclick="filterGallery('all')">전체</button>
+                <button class="gallery-tab" onclick="filterGallery('image')">사진</button>
+                <button class="gallery-tab" onclick="filterGallery('video')">영상</button>
             </div>
         </div>
         <div class="gallery-grid" id="gallery-grid">
@@ -834,7 +834,7 @@
                     <circle cx="8" cy="8" r="2"/>
                     <polyline points="21 15 16 10 5 21"/>
                 </svg>
-                <p>?�성??결과물이<br>?�기???�입?�다</p>
+                <p>생성된 결과물이<br>여기에 쌓입니다</p>
             </div>
         </div>
     </div>
@@ -843,7 +843,7 @@
 <!-- Drag Drop Overlay -->
 <div class="drag-overlay" id="drag-overlay">
     <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <p>?��?지/?�상???�롭?�여 ?�퍼?�스�??�용</p>
+    <p>이미지/영상을 드롭하여 레퍼런스로 사용</p>
 </div>
 
 <!-- Toast -->
@@ -897,7 +897,7 @@ async function checkAuth() {
         currentSession = session;
 
         // Show user info
-        const email = session.user?.email || '?�용??;
+        const email = session.user?.email || '사용자';
         document.getElementById('user-email-display').textContent = email;
         document.getElementById('user-avatar-char').textContent = email.charAt(0).toUpperCase();
         document.getElementById('nav-login-link') && (document.getElementById('nav-login-link').style.display = 'none');
@@ -986,7 +986,7 @@ async function loadCanvasProjectsList() {
                     titleDiv.style.overflow = 'hidden';
                     titleDiv.style.textOverflow = 'ellipsis';
                     titleDiv.style.cursor = 'pointer';
-                    titleDiv.innerHTML = `?�� ${proj.title}`;
+                    titleDiv.innerHTML = `📄 ${proj.title}`;
                     titleDiv.onclick = () => window.location.href = `/canvas?project_id=${proj.id}`;
                     
                     const actionsDiv = document.createElement('div');
@@ -994,13 +994,13 @@ async function loadCanvasProjectsList() {
                     actionsDiv.style.gap = '4px';
                     
                     const editBtn = document.createElement('button');
-                    editBtn.innerHTML = '?�️';
-                    editBtn.style.background = 'none'; editBtn.style.border = 'none'; editBtn.style.cursor = 'pointer'; editBtn.title = '?�름 ?�정';
+                    editBtn.innerHTML = '✏️';
+                    editBtn.style.background = 'none'; editBtn.style.border = 'none'; editBtn.style.cursor = 'pointer'; editBtn.title = '이름 수정';
                     editBtn.onclick = (e) => { e.stopPropagation(); updateProjectTitle(proj.id, proj.title); };
                     
                     const delBtn = document.createElement('button');
-                    delBtn.innerHTML = '?���?;
-                    delBtn.style.background = 'none'; delBtn.style.border = 'none'; delBtn.style.cursor = 'pointer'; delBtn.title = '??��';
+                    delBtn.innerHTML = '🗑️';
+                    delBtn.style.background = 'none'; delBtn.style.border = 'none'; delBtn.style.cursor = 'pointer'; delBtn.title = '삭제';
                     delBtn.onclick = (e) => { e.stopPropagation(); deleteProject(proj.id); };
                     
                     actionsDiv.appendChild(editBtn);
@@ -1020,7 +1020,7 @@ async function loadCanvasProjectsList() {
                 newBtn.style.color = 'var(--text)';
                 newBtn.style.justifyContent = 'center';
                 newBtn.style.background = 'rgba(255,255,255,0.05)';
-                newBtn.innerHTML = '+ ??캔버???�??;
+                newBtn.innerHTML = '+ 새 캔버스 저장';
                 newBtn.onclick = () => window.location.href = '/canvas';
                 listContainer.appendChild(newBtn);
             }
@@ -1029,7 +1029,7 @@ async function loadCanvasProjectsList() {
 }
 
 async function updateProjectTitle(id, currentTitle) {
-    const newTitle = prompt('???�로?�트 ?�름???�력?�세??', currentTitle);
+    const newTitle = prompt('새 프로젝트 이름을 입력하세요:', currentTitle);
     if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
     
     try {
@@ -1039,29 +1039,29 @@ async function updateProjectTitle(id, currentTitle) {
             body: JSON.stringify({ title: newTitle.trim() })
         });
         if (res.ok) {
-            showToast('???�름???�정?�었?�니??');
+            showToast('✅ 이름이 수정되었습니다.');
             loadCanvasProjectsList();
         } else {
-            showToast('???�정 ?�패');
+            showToast('❌ 수정 실패');
         }
     } catch(e) {
-        showToast('???�정 �??�류 발생');
+        showToast('❌ 수정 중 오류 발생');
     }
 }
 
 async function deleteProject(id) {
-    if (!confirm('?�말�????�로?�트�???��?�시겠습?�까?')) return;
+    if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
     
     try {
         const res = await fetch(`/api/canvas/project/${id}`, { method: 'DELETE' });
         if (res.ok) {
-            showToast('?���??�로?�트가 ??��?�었?�니??');
+            showToast('🗑️ 프로젝트가 삭제되었습니다.');
             loadCanvasProjectsList();
         } else {
-            showToast('????�� ?�패');
+            showToast('❌ 삭제 실패');
         }
     } catch(e) {
-        showToast('????�� �??�류 발생');
+        showToast('❌ 삭제 중 오류 발생');
     }
 }
 
@@ -1101,16 +1101,16 @@ async function checkHealth() {
 // MODE SWITCHING
 // =====================================================
 const imageModels = [
-    { value: 'gemini-2.5-flash-image', label: 'Nano Banana Standard (Flash) - $0.039/?? },
-    { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2 (3.1 Flash) - $0.09/?? },
-    { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro (3.0 Pro) - $0.24/?? }
+    { value: 'gemini-2.5-flash-image', label: 'Nano Banana Standard (Flash) - $0.039/장' },
+    { value: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2 (3.1 Flash) - $0.09/장' },
+    { value: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro (3.0 Pro) - $0.24/장' }
 ];
 const videoModels = [
     { value: 'dreamina-seedance-2-0-260128', label: 'Seedance 2.0 (Dreamina Seedance 2.0)' },
-    { value: 'kling-v3.0', label: 'Kling 3.0 Standard - $0.58/5�? },
-    { value: 'kling-v2.5-turbo', label: 'Kling 2.5 Turbo (Preview) - $0.28/5�? },
-    { value: 'kling-v2.6-i2v', label: 'Kling 2.6 I2V (Stable) - $0.45/5�? },
-    { value: 'kling-v3.0-omni', label: 'Kling 3.0 Omni (Premium) - $0.79/5�? }
+    { value: 'kling-v3.0', label: 'Kling 3.0 Standard - $0.58/5초' },
+    { value: 'kling-v2.5-turbo', label: 'Kling 2.5 Turbo (Preview) - $0.28/5초' },
+    { value: 'kling-v2.6-i2v', label: 'Kling 2.6 I2V (Stable) - $0.45/5초' },
+    { value: 'kling-v3.0-omni', label: 'Kling 3.0 Omni (Premium) - $0.79/5초' }
 ];
 
 function setMode(mode) {
@@ -1147,9 +1147,9 @@ function setMode(mode) {
     populateModels();
     updateI2VBadge();
 
-    // VIDEO ???�환 ?? ?��?지 ?�퍼?�스가 ?�으�??�내
+    // VIDEO 탭 전환 시: 이미지 레퍼런스가 있으면 안내
     if (mode === 'video' && base64ImageRef) {
-        showToast('?�� ?��?지 ?�퍼?�스가 ?�정?�어 ?�습?�다. GENERATE 버튼?�로 Image-to-Video�??�성?�니??');
+        showToast('🎬 이미지 레퍼런스가 설정되어 있습니다. GENERATE 버튼으로 Image-to-Video를 생성합니다!');
     }
 }
 
@@ -1195,8 +1195,8 @@ function updateCostDisplay() {
         credits = (baseCredits * multiplier).toString();
         cost = `$${(baseCost * multiplier).toFixed(2)}/${currentVidDur}s`;
     }
-    lbl.textContent = `??${credits}`;
-    costEl.textContent = `?�상 비용: ${cost}`;
+    lbl.textContent = `✨ ${credits}`;
+    costEl.textContent = `예상 비용: ${cost}`;
 }
 
 // =====================================================
@@ -1239,7 +1239,7 @@ function clearImageRef() {
     const i2vStatus = document.getElementById('i2v-status');
     if (i2vStatus) i2vStatus.style.display = 'none';
     updateI2VBadge();
-    showToast('?���??�퍼?�스 ?��?지 ?�거??);
+    showToast('🗑️ 레퍼런스 이미지 제거됨');
 }
 
 function updateI2VBadge() {
@@ -1263,7 +1263,7 @@ function handleFileUpload(input) {
         currentDownloadUrl = e.target.result;
         document.getElementById('action-bar').style.display = 'flex';
         document.getElementById('link-open').href = e.target.result;
-        showToast('?�� ?��?지 ?�정?? VIDEO ??���??�환?�면 ???��?지�??�상???�성?�니??');
+        showToast('📎 이미지 설정됨! VIDEO 탭으로 전환하면 이 이미지로 영상이 생성됩니다.');
     };
     reader.readAsDataURL(file);
 }
@@ -1299,7 +1299,7 @@ function handlePreviewDrop(e) {
         currentDownloadUrl = droppedUrl;
         document.getElementById('action-bar').style.display = 'flex';
         document.getElementById('link-open').href = droppedUrl;
-        showToast('???�스?�리 ??��???�면??배치?�었?�니??');
+        showToast('✅ 히스토리 항목이 화면에 배치되었습니다!');
         return;
     }
 
@@ -1307,7 +1307,7 @@ function handlePreviewDrop(e) {
     const file = e.dataTransfer.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        showToast('?�️ ?��?지 ?�는 ?�상 ?�일�?지?�합?�다'); return;
+        showToast('⚠️ 이미지 또는 영상 파일만 지원합니다'); return;
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -1327,7 +1327,7 @@ function handlePreviewDrop(e) {
         currentDownloadUrl = dataUrl;
         document.getElementById('action-bar').style.display = 'flex';
         document.getElementById('link-open').href = dataUrl;
-        showToast('???��?지가 중앙???�정?? VIDEO ??���??�환?�면 ???��?지 기반?�로 ?�상???�성?�니??');
+        showToast('✅ 이미지가 중앙에 설정됨! VIDEO 탭으로 전환하면 이 이미지 기반으로 영상이 생성됩니다.');
     };
     reader.readAsDataURL(file);
 }
@@ -1359,21 +1359,21 @@ function setUIState(state) {
         genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: IDLE';
     } else if (state === 'submitting') {
         genBtn.disabled = true;
-        loader.style.display = 'flex'; document.getElementById('loader-msg').textContent = '?�청???�송?�고 ?�습?�다...';
+        loader.style.display = 'flex'; document.getElementById('loader-msg').textContent = '요청을 전송하고 있습니다...';
         statusLbl.textContent = 'Status: SUBMITTING';
     } else if (state === 'generating') {
         genBtn.disabled = true;
         loader.style.display = 'flex'; statusLbl.textContent = 'Status: GENERATING';
     } else if (state === 'success') {
-        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: SUCCESS ??;
+        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: SUCCESS ✓';
     } else if (state === 'failed') {
-        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: FAILED ??;
+        genBtn.disabled = false; loader.style.display = 'none'; statusLbl.textContent = 'Status: FAILED ✗';
     }
 }
 
 async function handleGenerate() {
     const prompt = document.getElementById('prompt-input').value.trim();
-    if (!prompt) { showToast('?�️ ?�롬?�트�??�력?�주?�요'); document.getElementById('prompt-input').focus(); return; }
+    if (!prompt) { showToast('⚠️ 프롬프트를 입력해주세요'); document.getElementById('prompt-input').focus(); return; }
 
     // Reset preview
     document.getElementById('preview-img').style.display = 'none';
@@ -1400,9 +1400,9 @@ async function generateImage(prompt) {
         const body = { prompt, aspect_ratio: ratio, model_name: model, mode: resolution };
         if (base64ImageRef && base64ImageRef.trim()) {
             body.image = base64ImageRef;
-            showToast('?�� 첨�? ?��?지 기반 ?�정/?�집 진행 �?..');
+            showToast('🎨 첨부 이미지 기반 수정/편집 진행 중...');
         } else {
-            showToast('?���??�규 ?��?지 ?�성 �?..');
+            showToast('🖼️ 신규 이미지 생성 중...');
         }
 
         const res = await fetch('/api/gemini/image', {
@@ -1420,9 +1420,9 @@ async function generateImage(prompt) {
         const imgEl = document.getElementById('preview-img');
         const imgSrc = data.image_url || data.image || (data.image_base64 ? `data:image/png;base64,${data.image_base64}` : null);
 
-        if (!imgSrc) throw new Error(data.detail || '?��?지 ?�이?��? ?�습?�다');
+        if (!imgSrc) throw new Error(data.detail || '이미지 데이터가 없습니다');
 
-        imgEl.onerror = () => { console.error('Image load failed:', imgSrc); showToast('?�️ ?��?지 로딩 �??�류가 발생?�습?�다. ????���??�기�??�릭?�보?�요.'); };
+        imgEl.onerror = () => { console.error('Image load failed:', imgSrc); showToast('⚠️ 이미지 로딩 중 오류가 발생했습니다. 새 탭으로 열기를 클릭해보세요.'); };
         imgEl.src = imgSrc;
         document.getElementById('preview-loader').style.display = 'none';
         document.getElementById('preview-placeholder').style.display = 'none';
@@ -1438,12 +1438,12 @@ async function generateImage(prompt) {
         // Add to gallery & save to Supabase Storage/DB
         addToGallery('image', imgSrc, prompt, model);
         setUIState('success');
-        showToast('???��?지 ?�성 ?�료! (VIDEO ??���??�환 ?????��?지�??�상???�성?�니??');
+        showToast('✅ 이미지 생성 완료! (VIDEO 탭으로 전환 시 이 이미지로 영상이 생성됩니다)');
     } catch (err) {
         document.getElementById('preview-loader').style.display = 'none';
         setUIState('failed');
         document.getElementById('preview-placeholder').style.display = 'flex';
-        showToast('??' + (err.message || '?��?지 ?�성 ?�패'));
+        showToast('❌ ' + (err.message || '이미지 생성 실패'));
     }
 }
 
@@ -1471,7 +1471,7 @@ async function generateVideo(prompt) {
         const apiEndpoint = isSeedance ? '/api/seedance/create' : '/api/kling/create';
         const engineLabel = isSeedance ? 'Seedance 2.0' : 'Kling AI';
 
-        showToast(`?�� ${engineLabel} 비디???�성 ?�청 �?..`);
+        showToast(`🎬 ${engineLabel} 비디오 생성 요청 중...`);
 
         const res = await fetch(apiEndpoint, {
             method: 'POST',
@@ -1489,15 +1489,15 @@ async function generateVideo(prompt) {
         }
 
         const data = await res.json();
-        if (!data.task_id) throw new Error('task_id�?받�? 못했?�니??);
+        if (!data.task_id) throw new Error('task_id를 받지 못했습니다');
 
         setUIState('generating');
-        document.getElementById('loader-msg').textContent = '?�상???�성?�고 ?�습?�다 (30~90�?...';
+        document.getElementById('loader-msg').textContent = '영상을 생성하고 있습니다 (30~90초)...';
         startPolling(data.task_type || 'text2video', data.task_id, prompt, model);
     } catch (err) {
         setUIState('failed');
         document.getElementById('preview-placeholder').style.display = 'flex';
-        showToast('??' + (err.message || '?�상 ?�성 ?�패'));
+        showToast('❌ ' + (err.message || '영상 생성 실패'));
     }
 }
 
@@ -1509,7 +1509,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
         elapsed += 2;
         // Calculate estimated progress percentage (target ~60 seconds for completion)
         const percent = Math.min(98, Math.floor((elapsed / 60) * 100));
-        timerEl.textContent = `진행�? ${percent}% (경과: ${elapsed}�?`;
+        timerEl.textContent = `진행률: ${percent}% (경과: ${elapsed}초)`;
     }, 2000);
 
     const poll = async () => {
@@ -1517,7 +1517,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
             clearInterval(tickTimer);
             setUIState('failed');
             document.getElementById('preview-placeholder').style.display = 'flex';
-            showToast('?�️ 비디???�성 ?�간??초과?�었?�니??(120�??�한). ?�시 ?�도??주세??');
+            showToast('⚠️ 비디오 생성 시간이 초과되었습니다 (120초 제한). 다시 시도해 주세요.');
             return;
         }
         try {
@@ -1530,7 +1530,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
                 if (typeof errDetail === 'object' && errDetail !== null) {
                     errDetail = errDetail.error || JSON.stringify(errDetail);
                 }
-                throw new Error(errDetail || '?�링 ?�류');
+                throw new Error(errDetail || '폴링 오류');
             }
             const data = await res.json();
             const st = (data.status || data.task_status || '').toLowerCase();
@@ -1562,10 +1562,10 @@ function startPolling(taskType, taskId, prompt, modelName) {
                 // Add to gallery & save to Supabase Storage/DB
                 addToGallery('video', finalVideoUrl, prompt, modelName);
                 setUIState('success');
-                showToast('?�� 비디???�성 ?�료!');
+                showToast('🎉 비디오 생성 완료!');
             } else if (st === 'failed') {
                 clearInterval(tickTimer);
-                throw new Error('?�성 ?�패: ' + (data.message || data.error || ''));
+                throw new Error('생성 실패: ' + (data.message || data.error || ''));
             } else {
                 setTimeout(poll, 4000);
             }
@@ -1573,7 +1573,7 @@ function startPolling(taskType, taskId, prompt, modelName) {
             clearInterval(tickTimer);
             setUIState('failed');
             document.getElementById('preview-placeholder').style.display = 'flex';
-            showToast('??' + err.message);
+            showToast('❌ ' + err.message);
         }
     };
     setTimeout(poll, 3000);
@@ -1645,7 +1645,7 @@ function filterGallery(filter) {
     galleryFilter = filter;
     document.querySelectorAll('.gallery-tab').forEach(tab => {
         tab.classList.toggle('active', tab.textContent.includes(
-            filter === 'all' ? '?�체' : filter === 'image' ? '?�진' : '?�상'
+            filter === 'all' ? '전체' : filter === 'image' ? '사진' : '영상'
         ));
     });
     renderGallery();
@@ -1667,7 +1667,7 @@ function renderGallery() {
     if (filtered.length === 0) {
         grid.innerHTML = `<div class="gallery-empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="2"/><polyline points="21 15 16 10 5 21"/></svg>
-            <p>?�성??결과물이<br>?�기???�입?�다</p>
+            <p>생성된 결과물이<br>여기에 쌓입니다</p>
         </div>`;
         return;
     }
@@ -1681,12 +1681,12 @@ function renderGallery() {
         return `<div class="gallery-item" draggable="true" ondragstart="handleGalleryDragStart(event, ${idx})" onclick="previewGalleryItem(${idx})" onmouseenter="this.querySelector('video') && this.querySelector('video').play()" onmouseleave="this.querySelector('video') && (this.querySelector('video').pause(), this.querySelector('video').currentTime=0)">
             ${mediaEl}
             <div class="item-overlay">
-                <span class="item-type-badge">${isVideo ? '?�� VIDEO' : '?���?IMG'}</span>
+                <span class="item-type-badge">${isVideo ? '🎬 VIDEO' : '🖼️ IMG'}</span>
                 <div class="item-actions">
-                    <span class="item-dl-btn" title="?�운로드" onclick="event.stopPropagation(); triggerDownload('${item.src}', 'motionpix-${item.type}.${isVideo ? 'mp4' : 'jpg'}')">
+                    <span class="item-dl-btn" title="다운로드" onclick="event.stopPropagation(); triggerDownload('${item.src}', 'motionpix-${item.type}.${isVideo ? 'mp4' : 'jpg'}')">
                         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </span>
-                    <span class="item-del-btn" title="??��" onclick="event.stopPropagation(); deleteGalleryItem(${idx})">
+                    <span class="item-del-btn" title="삭제" onclick="event.stopPropagation(); deleteGalleryItem(${idx})">
                         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                     </span>
                 </div>
@@ -1700,7 +1700,7 @@ async function deleteGalleryItem(filteredIdx) {
     const item = filtered[filteredIdx];
     if (!item) return;
 
-    if (!confirm('?�택????��???�스?�리?�서 ??��?�시겠습?�까?')) return;
+    if (!confirm('선택한 항목을 히스토리에서 삭제하시겠습니까?')) return;
 
     const realIdx = galleryItems.findIndex(i => i === item);
     if (realIdx !== -1) {
@@ -1720,7 +1720,7 @@ async function deleteGalleryItem(filteredIdx) {
             console.error('Failed to delete generation from DB:', e);
         }
     }
-    showToast('?���??�스?�리 ??��????��?�었?�니??);
+    showToast('🗑️ 히스토리 항목이 삭제되었습니다');
 }
 
 function previewGalleryItem(idx) {
@@ -1753,7 +1753,7 @@ function previewGalleryItem(idx) {
 // =====================================================
 function doDownloadCurrent() {
     const url = currentDownloadUrl;
-    if (!url) { showToast('?�️ ?�운로드???�일???�습?�다'); return; }
+    if (!url) { showToast('⚠️ 다운로드할 파일이 없습니다'); return; }
     const isVideo = url.includes('.mp4') || url.includes('video') || url.includes('kling');
     const filename = isVideo ? `motionpix-video-${Date.now()}.mp4` : `motionpix-image-${Date.now()}.jpg`;
     triggerDownload(url, filename);
@@ -1761,7 +1761,7 @@ function doDownloadCurrent() {
 
 function triggerDownload(url, filename) {
     if (!url) return;
-    // 1. Base64 data: URL ??blob download (most reliable)
+    // 1. Base64 data: URL → blob download (most reliable)
     if (url.startsWith('data:')) {
         try {
             const parts = url.split(';base64,');
@@ -1775,22 +1775,22 @@ function triggerDownload(url, filename) {
             a.href = blobUrl; a.download = filename || 'motionpix-image.jpg';
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-            showToast('?�� ?�운로드 ?�료!'); return;
+            showToast('💾 다운로드 완료!'); return;
         } catch (e) { console.error('Base64 blob error', e); }
     }
-    // 2. Static local URL ??direct download
+    // 2. Static local URL → direct download
     if (url.startsWith('/static/') || url.startsWith('http://127.0.0.1') || url.startsWith('http://localhost')) {
         const a = document.createElement('a');
         a.href = url; a.download = filename;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        showToast('?�� ?�운로드 ?�작!'); return;
+        showToast('💾 다운로드 시작!'); return;
     }
-    // 3. Remote HTTPS URL (Kling CDN) ??use public proxy endpoint
+    // 3. Remote HTTPS URL (Kling CDN) → use public proxy endpoint
     const proxyUrl = `/api/download/proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
     const a = document.createElement('a');
     a.href = proxyUrl; a.download = filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    showToast('?�� ?�운로드 ?�작! (?�격 ?�일)');
+    showToast('💾 다운로드 시작! (원격 파일)');
 }
 
 // =====================================================
@@ -1931,31 +1931,31 @@ checkAuth();
                             <span className="node-dot" style={{ background: '#6366f1' }}></span>
                             <span className="node-label" style={{ color: '#a5b4fc' }}>Prompt Node</span>
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: '#71717a' }}>{data.status || '?��?}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#71717a' }}>{data.status || '대기'}</span>
                     </div>
                     <div className="node-body">
                         <div className="node-textarea-container">
-                            <div className="node-row" style={{ marginBottom: '2px' }}>?�롬?�트 (Prompt)</div>
+                            <div className="node-row" style={{ marginBottom: '2px' }}>프롬프트 (Prompt)</div>
                             <textarea
                                 className="node-textarea"
-                                placeholder="?�나리오 / ?�롬?�트�??�력?�세??.."
+                                placeholder="시나리오 / 프롬프트를 입력하세요..."
                                 value={data.prompt || ''}
                                 onChange={(e) => onChange('prompt', e.target.value)}
                             />
                         </div>
                         <div>
-                            <div className="node-row" style={{ marginBottom: '2px' }}>?�거?�브 ?�롬?�트</div>
+                            <div className="node-row" style={{ marginBottom: '2px' }}>네거티브 프롬프트</div>
                             <input
                                 type="text"
                                 className="node-select"
                                 style={{ width: '100%', maxWidth: '100%' }}
-                                placeholder="?�외???�소..."
+                                placeholder="제외할 요소..."
                                 value={data.negativePrompt || ''}
                                 onChange={(e) => onChange('negativePrompt', e.target.value)}
                             />
                         </div>
                         <div className="node-row">
-                            <span>?�풍 ?��???/span>
+                            <span>화풍 스타일</span>
                             <select className="node-select" value={data.style || 'Cinematic'} onChange={(e) => onChange('style', e.target.value)}>
                                 <option value="Cinematic">Cinematic</option>
                                 <option value="Anime">Anime</option>
@@ -1997,7 +1997,7 @@ checkAuth();
                         reader.onload = (ev) => {
                             onChange('inputImage', ev.target.result);
                             onChange('imageUrl', null);
-                            showToast('?�� ?��?지 ?�일 주입 ?�료!');
+                            showToast('📷 이미지 파일 주입 완료!');
                         };
                         reader.readAsDataURL(e.target.files[0]);
                     }
@@ -2013,7 +2013,7 @@ checkAuth();
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showToast('?�� ?�운로드가 ?�작?�었?�니??');
+                showToast('💾 다운로드가 시작되었습니다!');
             };
 
             const handleImageClick = (e) => {
@@ -2049,11 +2049,11 @@ checkAuth();
                         reader.onload = (ev) => {
                             onChange('inputImage', ev.target.result);
                             onChange('imageUrl', null);
-                            showToast('?�� ?��?지 ?�래그앤?�롭 주입 ?�료!');
+                            showToast('📷 이미지 드래그앤드롭 주입 완료!');
                         };
                         reader.readAsDataURL(file);
                     } else {
-                        showToast('?�️ ?��?지 ?�일�??�롭?????�습?�다.');
+                        showToast('⚠️ 이미지 파일만 드롭할 수 있습니다.');
                     }
                 }
             };
@@ -2067,9 +2067,9 @@ checkAuth();
                             <span className="node-label" style={{ color: '#6ee7b7' }}>Image Node</span>
                         </div>
                         <div className="node-btn-group">
-                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>???�행</button>
-                            {data.imageUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>?��</button>}
-                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '?��?}</span>
+                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>▶ 실행</button>
+                            {data.imageUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>💾</button>}
+                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '대기'}</span>
                         </div>
                     </div>
                     <div className="node-body">
@@ -2096,11 +2096,11 @@ checkAuth();
                                         color: '#fff', fontSize: '0.78rem', fontWeight: 600, gap: '4px',
                                         opacity: 0, transition: 'opacity 0.2s'
                                     }} className="hover-overlay">
-                                        ?�� ?�릭?�여 ?�게 보기
+                                        🔍 클릭하여 크게 보기
                                     </div>
                                 </div>
                             ) : (
-                                <span>?��?지�??�기�??�래�?& ?�롭 / ?�릭</span>
+                                <span>이미지를 여기로 드래그 & 드롭 / 클릭</span>
                             )}
                         </div>
                         <div className="node-row">
@@ -2112,16 +2112,16 @@ checkAuth();
                             </select>
                         </div>
                         <div className="node-row">
-                            <span>출력 ?�상??/span>
+                            <span>출력 해상도</span>
                             <select className="node-select" value={data.res || '1k'} onChange={(e) => onChange('res', e.target.value)}>
                                 <option value="1k">1K (Standard)</option>
                                 <option value="2k">2K (High Quality)</option>
                             </select>
                         </div>
                         <div className="node-row" style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', justifyContent: 'space-between', color: '#6ee7b7', fontWeight: 600 }}>
-                            <span>?�상 ?�모 코인:</span>
+                            <span>예상 소모 코인:</span>
                             <span style={{ background: '#12251a', padding: '2px 8px', borderRadius: '4px', border: '1px solid #10b981', fontSize: '0.75rem' }}>
-                                ?�� {Math.round(parseFloat(calculateImageCost(data.model, data.res)) * 100)} 코인 (${calculateImageCost(data.model, data.res)})
+                                💰 {Math.round(parseFloat(calculateImageCost(data.model, data.res)) * 100)} 코인 (${calculateImageCost(data.model, data.res)})
                             </span>
                         </div>
                     </div>
@@ -2144,7 +2144,7 @@ checkAuth();
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showToast('?�� ?�운로드가 ?�작?�었?�니??');
+                showToast('💾 다운로드가 시작되었습니다!');
             };
 
             return (
@@ -2156,9 +2156,9 @@ checkAuth();
                             <span className="node-label" style={{ color: '#fcd34d' }}>Video Node</span>
                         </div>
                         <div className="node-btn-group">
-                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>???�행</button>
-                            {data.videoUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>?��</button>}
-                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '?��?}</span>
+                            <button className="btn-node-action btn-node-run" onClick={(e) => { e.stopPropagation(); data.onRun(id); }}>▶ 실행</button>
+                            {data.videoUrl && <button className="btn-node-action btn-node-dl" onClick={downloadResult}>💾</button>}
+                            <span style={{ fontSize: '0.68rem', color: '#71717a' }}>{data.status || '대기'}</span>
                         </div>
                     </div>
                     <div className="node-body">
@@ -2166,7 +2166,7 @@ checkAuth();
                             {data.videoUrl ? (
                                 <video key={data.videoUrl} src={data.videoUrl} controls autoPlay loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                                <span>?�성 ?��?�?..</span>
+                                <span>생성 대기 중...</span>
                             )}
                         </div>
                         <div className="node-row">
@@ -2180,30 +2180,30 @@ checkAuth();
                             </select>
                         </div>
                         <div className="node-row">
-                            <span>비디??길이</span>
+                            <span>비디오 길이</span>
                             <select className="node-select" value={data.dur || '5'} onChange={(e) => onChange('dur', e.target.value)}>
-                                <option value="5">5�?/option>
-                                <option value="10">10�?/option>
+                                <option value="5">5초</option>
+                                <option value="10">10초</option>
                             </select>
                         </div>
                         <div className="node-row">
-                            <span>출력 ?�상??/span>
+                            <span>출력 해상도</span>
                             <select className="node-select" value={data.res || 'std'} onChange={(e) => onChange('res', e.target.value)}>
                                 <option value="std">720p (Standard)</option>
                                 <option value="pro">1080p (High Quality)</option>
                             </select>
                         </div>
                         <div className="node-row">
-                            <span>?�디??(?�운??</span>
+                            <span>오디오 (사운드)</span>
                             <select className="node-select" value={data.sound || 'off'} onChange={(e) => onChange('sound', e.target.value)}>
-                                <option value="off">?�� ?�디???�기 (Off)</option>
-                                <option value="on">?�� AI ?�디???�성 (On)</option>
+                                <option value="off">🔇 오디오 끄기 (Off)</option>
+                                <option value="on">🔊 AI 오디오 생성 (On)</option>
                             </select>
                         </div>
                         <div className="node-row" style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.08)', justifyContent: 'space-between', color: '#fcd34d', fontWeight: 600 }}>
-                            <span>?�상 ?�모 코인:</span>
+                            <span>예상 소모 코인:</span>
                             <span style={{ background: '#2d2410', padding: '2px 8px', borderRadius: '4px', border: '1px solid #f59e0b', fontSize: '0.75rem' }}>
-                                ?�� {Math.round(parseFloat(calculateVideoCost(data.model, data.dur, data.res, data.sound)) * 100)} 코인 (${calculateVideoCost(data.model, data.dur, data.res, data.sound)})
+                                💰 {Math.round(parseFloat(calculateVideoCost(data.model, data.dur, data.res, data.sound)) * 100)} 코인 (${calculateVideoCost(data.model, data.dur, data.res, data.sound)})
                             </span>
                         </div>
                     </div>
@@ -2261,9 +2261,9 @@ checkAuth();
 
                 if (isValid) {
                     setEdges((eds) => addEdge({ ...connection, style: { stroke: '#0ea5e9', strokeWidth: 3 } }, eds));
-                    showToast('?�� ?�드가 ?�결?�었?�니??');
+                    showToast('🔗 노드가 연결되었습니다!');
                 } else {
-                    showToast('?�� ?�용?��? ?�는 ?�결?�니?? (규칙: Prompt ??Image ??Video)');
+                    showToast('🚫 허용되지 않는 연결입니다. (규칙: Prompt ➔ Image ➔ Video)');
                 }
             }, [nodes]);
 
@@ -2281,7 +2281,7 @@ checkAuth();
                 if (reconnectEdge.current) {
                     setEdges((eds) => eds.filter((e) => e.id !== reconnectEdge.current.id));
                     reconnectEdge.current = null;
-                    showToast('?�️ ?�결?�이 ??��?�었?�니??');
+                    showToast('✂️ 연결선이 삭제되었습니다.');
                 }
             }, []);
 
@@ -2364,19 +2364,19 @@ checkAuth();
             };
 
             // ============================================================
-            // SINGLE NODE EXECUTION ??Full Upstream Merge
+            // SINGLE NODE EXECUTION — Full Upstream Merge
             // ============================================================
             const onRunSingleNode = useCallback(async (nid) => {
                 const node = nodesRef.current.find(n => n.id === nid);
                 if (!node) return;
 
-                // Set status ??running
-                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '?�성 �?..' } } : n));
+                // Set status → running
+                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '생성 중...' } } : n));
 
-                // ?�?� Gather upstream context ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+                // ── Gather upstream context ──────────────────────────────
                 const { promptNode, imageNode } = getUpstreamContext(nid);
 
-                // ?�?� Debug log: upstream summary ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+                // ── Debug log: upstream summary ─────────────────────────
                 console.group(`=== [MotionPix] ${node.type.toUpperCase()} Node [${nid}] Execute ===`);
                 console.log('Node data:', node.data);
                 console.log('Upstream Prompt Node:', promptNode ? {
@@ -2385,26 +2385,26 @@ checkAuth();
                     negativePrompt: promptNode.data.negativePrompt,
                     style: promptNode.data.style,
                     ratio: promptNode.data.ratio
-                } : 'NONE (직접 ?�롬?�트 ?�결 ?�음)');
+                } : 'NONE (직접 프롬프트 연결 없음)');
                 console.log('Upstream Image Node:', imageNode ? {
                     id: imageNode.id,
                     imageUrl: imageNode.data.imageUrl,
                     model: imageNode.data.model,
                     res: imageNode.data.res,
                     status: imageNode.data.status
-                } : 'NONE (?��?지 ?�드 ?�결 ?�음)');
+                } : 'NONE (이미지 노드 연결 없음)');
 
-                // ?�?� Video Node: Auto-run upstream Image Node if image is missing ?�?�
+                // ── Video Node: Auto-run upstream Image Node if image is missing ──
                 if (node.type === 'video') {
                     if (imageNode && !imageNode.data.imageUrl && !imageNode.data.inputImage) {
-                        showToast('?���??��?지 ?�드가 ?�직 ?�성?��? ?�아 ?��?지�?먼�? ?�성?�니??..');
-                        console.log('[Video Node] Upstream Image Node가 ?�성???�되??Image Node�?먼�? ?�행?�니??', imageNode.id);
+                        showToast('🖼️ 이미지 노드가 아직 생성되지 않아 이미지를 먼저 생성합니다...');
+                        console.log('[Video Node] Upstream Image Node가 생성이 안되어 Image Node를 먼저 실행합니다:', imageNode.id);
                         
                         // Execute upstream image node
                         const generatedImgUrl = await onRunSingleNode(imageNode.id);
                         if (!generatedImgUrl) {
-                            setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '?�패' } } : n));
-                            showToast('???��?지 ?�드 ?�성 ?�패�??�해 비디???�성??중단?�니??');
+                            setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '실패' } } : n));
+                            showToast('❌ 이미지 노드 생성 실패로 인해 비디오 생성을 중단합니다.');
                             return null;
                         }
                         // Update local imageNode reference
@@ -2413,7 +2413,7 @@ checkAuth();
                 }
                 console.groupEnd();
 
-                // ?�?� Build merged payload ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+                // ── Build merged payload ──────────────────────────────────
                 const effectivePrompt = (promptNode?.data?.prompt) || node.data.prompt || 'Cinematic motion';
                 const effectiveNegPrompt = (promptNode?.data?.negativePrompt) || node.data.negativePrompt || '';
                 const effectiveStyle = (promptNode?.data?.style) || node.data.style || 'Cinematic';
@@ -2467,8 +2467,8 @@ checkAuth();
                 };
 
 
-                console.log('[MotionPix] Final merged payload ??, JSON.stringify(finalPayload, null, 2));
-                showToast(`?? ${node.type.toUpperCase()} ?�드 ?�행 ?�작...`);
+                console.log('[MotionPix] Final merged payload →', JSON.stringify(finalPayload, null, 2));
+                showToast(`🚀 ${node.type.toUpperCase()} 노드 실행 시작...`);
 
                 try {
                     const headers = { 'Content-Type': 'application/json' };
@@ -2487,7 +2487,7 @@ checkAuth();
 
                     if (data.status === 'polling') {
                         // Video Node polling logic
-                        setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '?�성 �?..' } } : n));
+                        setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '생성 중...' } } : n));
                         const { task_id, task_type, model_name, prompt: full_prompt } = data;
                         
                         let pollInterval = setInterval(async () => {
@@ -2509,9 +2509,9 @@ checkAuth();
                                     
                                     if (vUrl) {
                                         setNodes((nds) => nds.map(n => n.id === nid ? {
-                                            ...n, data: { ...n.data, status: '?�료', videoUrl: vUrl }
+                                            ...n, data: { ...n.data, status: '완료', videoUrl: vUrl }
                                         } : n));
-                                        showToast(`??Video ?�성 ?�료!`);
+                                        showToast(`✅ Video 생성 완료!`);
                                         
                                         // Add to Gallery UI & Save to Generations DB
                                         if (typeof window.addToGallery === 'function') {
@@ -2539,8 +2539,8 @@ checkAuth();
                                 }
                             } catch (e) {
                                 clearInterval(pollInterval);
-                                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '?�패' } } : n));
-                                showToast('??' + e.message);
+                                setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '실패' } } : n));
+                                showToast('❌ ' + e.message);
                             }
                         }, 4000); // 4 second interval
                     } else if (data.status === 'success') {
@@ -2551,7 +2551,7 @@ checkAuth();
                                     ...n,
                                     data: {
                                         ...n.data,
-                                        status: '?�료',
+                                        status: '완료',
                                         imageUrl: result.imageUrl || n.data.imageUrl,
                                         videoUrl: result.videoUrl || n.data.videoUrl
                                     }
@@ -2559,8 +2559,8 @@ checkAuth();
                             }
                             return n;
                         }));
-                        console.log(`[MotionPix] ??${node.type.toUpperCase()} ?�성 ?�료:`, result);
-                        showToast(`??${node.type.toUpperCase()} ?�성 ?�료!`);
+                        console.log(`[MotionPix] ✅ ${node.type.toUpperCase()} 생성 완료:`, result);
+                        showToast(`✅ ${node.type.toUpperCase()} 생성 완료!`);
 
                         // Add to Gallery UI & Save to Generations DB
                         if (result.imageUrl && typeof window.addToGallery === 'function') {
@@ -2569,13 +2569,13 @@ checkAuth();
                         return result.imageUrl || null;
                     } else {
                         const errMsg = data.error || 'API Execution Failed';
-                        console.error(`[MotionPix] ??${node.type.toUpperCase()} ?�패:`, errMsg);
+                        console.error(`[MotionPix] ❌ ${node.type.toUpperCase()} 실패:`, errMsg);
                         throw new Error(errMsg);
                     }
                 } catch (err) {
-                    setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '?�패' } } : n));
-                    console.error('[MotionPix] ?�행 ?�류:', err);
-                    showToast('???�성 ?�류: ' + err.message);
+                    setNodes((nds) => nds.map(n => n.id === nid ? { ...n, data: { ...n.data, status: '실패' } } : n));
+                    console.error('[MotionPix] 실행 오류:', err);
+                    showToast('❌ 생성 오류: ' + err.message);
                 }
             }, [nodes, edges]);
 
@@ -2594,14 +2594,14 @@ checkAuth();
                         model: type === 'image' ? 'gemini-3.1-flash-image-preview' : 'kling-v3.0',
                         res: '1k',
                         dur: '5',
-                        status: '?��?,
+                        status: '대기',
                         onChange: onNodeDataChange,
                         onRun: onRunSingleNode,
                         onPreview: handlePreview
                     }
                 };
                 setNodes((nds) => nds.concat(newNode));
-                showToast(`???�규 ${type.toUpperCase()} ?�드 추�?`);
+                showToast(`✅ 신규 ${type.toUpperCase()} 노드 추가`);
             };
 
             const loadTemplate = () => {
@@ -2615,11 +2615,11 @@ checkAuth();
                         type: 'prompt',
                         position: { x: 50, y: 120 },
                         data: {
-                            prompt: '미래 ?�시 ?�경 ?�의 ?�이버펑???��????�이??�?,
+                            prompt: '미래 도시 야경 속의 사이버펑크 스타일 레이싱 카',
                             negativePrompt: 'blurry, low quality',
                             style: 'Cyberpunk',
                             ratio: '16:9',
-                            status: '?��?,
+                            status: '대기',
                             onChange: onNodeDataChange,
                             onRun: onRunSingleNode,
                             onPreview: handlePreview
@@ -2632,7 +2632,7 @@ checkAuth();
                         data: {
                             model: 'gemini-3.1-flash-image-preview',
                             res: '1k',
-                            status: '?��?,
+                            status: '대기',
                             onChange: onNodeDataChange,
                             onRun: onRunSingleNode,
                             onPreview: handlePreview
@@ -2645,7 +2645,7 @@ checkAuth();
                         data: {
                             model: 'kling-v3.0',
                             dur: '5',
-                            status: '?��?,
+                            status: '대기',
                             onChange: onNodeDataChange,
                             onRun: onRunSingleNode,
                             onPreview: handlePreview
@@ -2660,15 +2660,15 @@ checkAuth();
 
                 setNodes(initialNodes);
                 setEdges(initialEdges);
-                showToast('?�� 3?�계 ?�크?�로???�플�?로드 ?�료');
+                showToast('🎬 3단계 워크플로우 템플릿 로드 완료');
             };
 
             // Run Entire Pipeline
             const runPipeline = async () => {
                 if (!nodes.length) return;
-                showToast('?? ?�체 ?�이?�라???�차 ?�행 ?�작...');
+                showToast('🚀 전체 파이프라인 순차 실행 시작...');
 
-                // ?�차???�회 ?�행
+                // 순차적 순회 실행
                 const promptNode = nodes.find(n => n.type === 'prompt');
                 const imageNode = nodes.find(n => n.type === 'image');
                 const videoNode = nodes.find(n => n.type === 'video');
@@ -2686,13 +2686,13 @@ checkAuth();
 
             // Canvas Project Save & Load Logic
             const [currentProjectId, setCurrentProjectId] = useState(null);
-            const [projectTitle, setProjectTitle] = useState('??캔버???�로?�트');
+            const [projectTitle, setProjectTitle] = useState('새 캔버스 프로젝트');
             const [showProjectModal, setShowProjectModal] = useState(false);
             const [projectsList, setProjectsList] = useState([]);
             
             const loadProjects = async () => {
                 if (!userId) {
-                    showToast('로그?�이 ?�요?�니??');
+                    showToast('로그인이 필요합니다.');
                     return;
                 }
                 try {
@@ -2705,7 +2705,7 @@ checkAuth();
                     }
                 } catch (e) {
                     console.error(e);
-                    showToast('?�로?�트 목록??불러?��? 못했?�니??');
+                    showToast('프로젝트 목록을 불러오지 못했습니다.');
                 }
             };
 
@@ -2714,15 +2714,15 @@ checkAuth();
                 
                 if (!userId) {
                     console.warn('Save aborted: User is not logged in.');
-                    alert('로그?�이 ?�요?�니??');
-                    showToast('로그?�이 ?�요?�니??');
+                    alert('로그인이 필요합니다.');
+                    showToast('로그인이 필요합니다.');
                     return;
                 }
                 
                 if (!projectTitle.trim()) {
                     console.warn('Save aborted: Project title is empty.');
-                    alert('?�로?�트 ?�목???�력?�주?�요.');
-                    showToast('?�로?�트 ?�목???�력?�주?�요.');
+                    alert('프로젝트 제목을 입력해주세요.');
+                    showToast('프로젝트 제목을 입력해주세요.');
                     return;
                 }
                 
@@ -2747,45 +2747,45 @@ checkAuth();
                             const errJson = JSON.parse(errText);
                             errText = errJson.detail || errText;
                         } catch(e) {}
-                        alert('???�???�패: ' + errText);
-                        showToast('???�???�패: ' + errText);
+                        alert('❌ 저장 실패: ' + errText);
+                        showToast('❌ 저장 실패: ' + errText);
                         return;
                     }
                     
                     const data = await res.json();
                     if (data.ok && data.data) {
                         setCurrentProjectId(data.data.id);
-                        alert(`?�� [${data.data.title}] ?�?�되?�습?�다!`);
-                        showToast(`?�� [${data.data.title}] ?�?�되?�습?�다.`);
+                        alert(`💾 [${data.data.title}] 저장되었습니다!`);
+                        showToast(`💾 [${data.data.title}] 저장되었습니다.`);
                     }
                 } catch (e) {
                     console.error(e);
-                    alert('???�로?�트 ?�??�??�류 발생: ' + e.message);
-                    showToast('?�로?�트 ?�?�에 ?�패?�습?�다.');
+                    alert('❌ 프로젝트 저장 중 오류 발생: ' + e.message);
+                    showToast('프로젝트 저장에 실패했습니다.');
                 }
             };
             
             const deleteProject = async (id, e) => {
                 e.stopPropagation();
-                if (!confirm('?�말�????�로?�트�???��?�시겠습?�까?')) return;
+                if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
                 try {
                     const res = await fetch(`/api/canvas/project/${id}`, { method: 'DELETE' });
                     if (res.ok) {
-                        showToast('?���??�로?�트가 ??��?�었?�니??');
+                        showToast('🗑️ 프로젝트가 삭제되었습니다.');
                         loadProjects();
                         if (currentProjectId === id) {
                             setCurrentProjectId(null);
-                            setProjectTitle('??캔버???�로?�트');
+                            setProjectTitle('새 캔버스 프로젝트');
                         }
                     } else {
-                        showToast('????�� ?�패');
+                        showToast('❌ 삭제 실패');
                     }
-                } catch(err) { showToast('???�류 발생'); }
+                } catch(err) { showToast('❌ 오류 발생'); }
             };
 
             const updateProjectTitle = async (id, currentTitle, e) => {
                 e.stopPropagation();
-                const newTitle = prompt('???�로?�트 ?�름???�력?�세??', currentTitle);
+                const newTitle = prompt('새 프로젝트 이름을 입력하세요:', currentTitle);
                 if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
                 try {
                     const res = await fetch(`/api/canvas/project/${id}/title`, {
@@ -2794,13 +2794,13 @@ checkAuth();
                         body: JSON.stringify({ title: newTitle.trim() })
                     });
                     if (res.ok) {
-                        showToast('???�름???�정?�었?�니??');
+                        showToast('✅ 이름이 수정되었습니다.');
                         loadProjects();
                         if (currentProjectId === id) setProjectTitle(newTitle.trim());
                     } else {
-                        showToast('???�정 ?�패');
+                        showToast('❌ 수정 실패');
                     }
-                } catch(err) { showToast('???�류 발생'); }
+                } catch(err) { showToast('❌ 오류 발생'); }
             };
 
             
@@ -2825,11 +2825,11 @@ checkAuth();
                         setCurrentProjectId(data.data.id);
                         setProjectTitle(data.data.title);
                         setShowProjectModal(false);
-                        showToast(`?�� [${data.data.title}] 불러?�기 ?�료!`);
+                        showToast(`📂 [${data.data.title}] 불러오기 완료!`);
                     }
                 } catch (e) {
                     console.error(e);
-                    showToast('?�로?�트�?불러?�는???�패?�습?�다.');
+                    showToast('프로젝트를 불러오는데 실패했습니다.');
                 }
             };
 
@@ -2875,7 +2875,7 @@ checkAuth();
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const file = e.dataTransfer.files[0];
                     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-                        showToast('?�️ ?��?지 ?�는 ?�상 ?�일�??�용?�니??');
+                        showToast('⚠️ 이미지 또는 영상 파일만 허용됩니다.');
                         return;
                     }
                     const isVid = file.type.startsWith('video/');
@@ -2893,14 +2893,14 @@ checkAuth();
                                     videoUrl: dataUrl,
                                     model: 'kling-v3.0',
                                     dur: '5',
-                                    status: '?�료',
+                                    status: '완료',
                                     onChange: onNodeDataChange,
                                     onRun: onRunSingleNode,
                                     onPreview: handlePreview
                                 }
                             };
                             setNodes((nds) => nds.concat(newNode));
-                            showToast('?�� 비디???�일??캔버?�에 추�??�었?�니??');
+                            showToast('🎬 비디오 파일이 캔버스에 추가되었습니다!');
                         } else {
                             const newNode = {
                                 id,
@@ -2912,14 +2912,14 @@ checkAuth();
                                     inputImage: dataUrl,
                                     model: 'gemini-3.1-flash-image-preview',
                                     res: '1k',
-                                    status: '?�료',
+                                    status: '완료',
                                     onChange: onNodeDataChange,
                                     onRun: onRunSingleNode,
                                     onPreview: handlePreview
                                 }
                             };
                             setNodes((nds) => nds.concat(newNode));
-                            showToast('?���??��?지 ?�일??캔버?�에 추�??�었?�니??');
+                            showToast('🖼️ 이미지 파일이 캔버스에 추가되었습니다!');
                         }
                     };
                     reader.readAsDataURL(file);
@@ -2951,14 +2951,14 @@ checkAuth();
                             videoUrl: droppedUrl,
                             model: 'kling-v3.0',
                             dur: '5',
-                            status: '?�료',
+                            status: '완료',
                             onChange: onNodeDataChange,
                             onRun: onRunSingleNode,
                             onPreview: handlePreview
                         }
                     };
                     setNodes((nds) => nds.concat(newNode));
-                    showToast('?�� ?�스?�리 비디???�드가 캔버?�에 추�??�었?�니??');
+                    showToast('🎬 히스토리 비디오 노드가 캔버스에 추가되었습니다!');
                 } else {
                     const newNode = {
                         id,
@@ -2970,14 +2970,14 @@ checkAuth();
                             inputImage: droppedUrl,
                             model: 'gemini-3.1-flash-image-preview',
                             res: '1k',
-                            status: '?�료',
+                            status: '완료',
                             onChange: onNodeDataChange,
                             onRun: onRunSingleNode,
                             onPreview: handlePreview
                         }
                     };
                     setNodes((nds) => nds.concat(newNode));
-                    showToast('?���??�스?�리 ?��?지 ?�드가 캔버?�에 추�??�었?�니??');
+                    showToast('🖼️ 히스토리 이미지 노드가 캔버스에 추가되었습니다!');
                 }
             }, [onNodeDataChange, onRunSingleNode, handlePreview]);
 
@@ -2985,7 +2985,7 @@ checkAuth();
                 <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div className="canvas-control-bar">
                         <div className="top-bar-left">
-                            <button className="top-bar-back" onClick={() => history.back()}>???�튜?�오</button>
+                            <button className="top-bar-back" onClick={() => history.back()}>← 스튜디오</button>
                             <div style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span>MotionPix</span>
                                 <div style={{ height: '20px', width: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
@@ -2996,15 +2996,15 @@ checkAuth();
                                     style={{ background: 'transparent', border: '1px solid transparent', color: '#f0f0f5', fontSize: '0.9rem', fontWeight: 600, padding: '4px 8px', borderRadius: '4px', outline: 'none', transition: 'border 0.2s', width: '200px' }} 
                                     onFocus={e => e.target.style.border = '1px solid rgba(255,255,255,0.2)'}
                                     onBlur={e => e.target.style.border = '1px solid transparent'}
-                                    placeholder="?�로?�트 ?�목 ?�력..."
+                                    placeholder="프로젝트 제목 입력..."
                                 />
-                                <button className="tool-btn" onClick={saveProject} style={{ padding: '6px 12px', background: '#f59e0b', color: '#000', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>?�� ?�??/button>
-                                <button className="tool-btn" onClick={loadProjects} style={{ padding: '6px 12px', background: '#3f3f46', color: '#fff', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>?�� ?�로?�트 목록</button>
+                                <button className="tool-btn" onClick={saveProject} style={{ padding: '6px 12px', background: '#f59e0b', color: '#000', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>💾 저장</button>
+                                <button className="tool-btn" onClick={loadProjects} style={{ padding: '6px 12px', background: '#3f3f46', color: '#fff', width: 'auto', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>📂 프로젝트 목록</button>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             <div className="rule-badge" style={{ marginLeft: '12px' }}>
-                                ?�� ?�드/?�결???�릭 ??Delete / Backspace ?�로 즉시 ??�� 가??
+                                💡 노드/연결선 클릭 후 Delete / Backspace 키로 즉시 삭제 가능
                             </div>
                         </div>
                     </div>
@@ -3030,12 +3030,12 @@ checkAuth();
 
                         {/* Toolbar */}
                         <div className="left-bar">
-                            <button className="tool-btn" onClick={() => addNode('prompt')} title="Prompt 추�?">Prompt</button>
-                            <button className="tool-btn" onClick={() => addNode('image')} title="Image 추�?">Image</button>
-                            <button className="tool-btn" onClick={() => addNode('video')} title="Video 추�?">Video</button>
+                            <button className="tool-btn" onClick={() => addNode('prompt')} title="Prompt 추가">Prompt</button>
+                            <button className="tool-btn" onClick={() => addNode('image')} title="Image 추가">Image</button>
+                            <button className="tool-btn" onClick={() => addNode('video')} title="Video 추가">Video</button>
                             <div className="tool-sep"></div>
-                            <button className="tool-btn" onClick={loadTemplate}>?�플�?/button>
-                            <button className="tool-btn" onClick={() => { setNodes([]); setEdges([]); }}>비우�?/button>
+                            <button className="tool-btn" onClick={loadTemplate}>템플릿</button>
+                            <button className="tool-btn" onClick={() => { setNodes([]); setEdges([]); }}>비우기</button>
                         </div>
 
                         {/* Top Right run pipeline */}
@@ -3044,7 +3044,7 @@ checkAuth();
                             style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}
                             onClick={runPipeline}
                         >
-                            ???�체 ?�이?�라???�차 ?�행
+                            ▶ 전체 파이프라인 순차 실행
                         </button>
                     </div>
 
@@ -3055,10 +3055,10 @@ checkAuth();
                                 <img src={modalImage} alt="Enlarged Preview" style={{ maxWidth: '100%', maxHeight: '78vh', borderRadius: '12px', boxShadow: '0 20px 50px rgba(0,0,0,0.9)', objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)' }} />
                                 <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
                                     <a href={`/api/download/proxy?url=${encodeURIComponent(modalImage)}&filename=motionpix-large-${Date.now()}.jpg`} style={{ background: '#10b981', color: '#fff', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        ?�� 고화�??�운로드
+                                        💾 고화질 다운로드
                                     </a>
                                     <button onClick={() => setModalImage(null)} style={{ background: '#3f3f46', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>
-                                        ?�기 ??
+                                        닫기 ✕
                                     </button>
                                 </div>
                             </div>
@@ -3070,12 +3070,12 @@ checkAuth();
                         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowProjectModal(false)}>
                             <div style={{ width: '400px', background: '#1c1e2a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <h3 style={{ margin: 0, color: '#f0f0f5', fontSize: '1.2rem' }}>??캔버???�로?�트</h3>
-                                    <button onClick={() => setShowProjectModal(false)} style={{ background: 'transparent', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '1.2rem' }}>??/button>
+                                    <h3 style={{ margin: 0, color: '#f0f0f5', fontSize: '1.2rem' }}>내 캔버스 프로젝트</h3>
+                                    <button onClick={() => setShowProjectModal(false)} style={{ background: 'transparent', border: 'none', color: '#a1a1aa', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
                                     {projectsList.length === 0 ? (
-                                        <div style={{ padding: '20px', textAlign: 'center', color: '#71717a' }}>?�?�된 ?�로?�트가 ?�습?�다.</div>
+                                        <div style={{ padding: '20px', textAlign: 'center', color: '#71717a' }}>저장된 프로젝트가 없습니다.</div>
                                     ) : (
                                         projectsList.map(proj => (
                                             <div key={proj.id} onClick={() => restoreProject(proj.id)} style={{ padding: '12px', background: '#272a38', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'} onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}>
@@ -3084,8 +3084,8 @@ checkAuth();
                                                     <span style={{ color: '#71717a', fontSize: '0.7rem' }}>{new Date(proj.updated_at).toLocaleDateString()}</span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button onClick={(e) => updateProjectTitle(proj.id, proj.title, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="?�름 ?�정">?�️</button>
-                                                    <button onClick={(e) => deleteProject(proj.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="??��">?���?/button>
+                                                    <button onClick={(e) => updateProjectTitle(proj.id, proj.title, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="이름 수정">✏️</button>
+                                                    <button onClick={(e) => deleteProject(proj.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }} title="삭제">🗑️</button>
                                                 </div>
                                             </div>
                                         ))
@@ -3139,6 +3139,6 @@ checkAuth();
 
 
 </script>
-    <div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.002</div>
+    <div id="app-version" style="position: fixed; bottom: 10px; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 9999;">v0.003</div>
 </body>
 </html>
